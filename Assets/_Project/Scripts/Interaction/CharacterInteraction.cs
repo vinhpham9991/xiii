@@ -44,8 +44,47 @@ public class CharacterInteraction : MonoBehaviour
     [Header("Selection Visual")]
     [SerializeField, Range(1f, 2f)] private float staticGlowPaddingScale = 1.15f;
 
+    private GameObject selectionArrowObj;
+
+    void CreateSelectionArrow()
+    {
+        selectionArrowObj = new GameObject("SelectionArrowCanvas");
+        selectionArrowObj.transform.SetParent(this.transform, false);
+        
+        CapsuleCollider cap = GetComponent<CapsuleCollider>();
+        float yOffset = cap != null ? cap.height / 2f + 0.8f : 2.5f; // Higher than character
+        selectionArrowObj.transform.localPosition = new Vector3(0, yOffset, 0); 
+        
+        Canvas canvas = selectionArrowObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.WorldSpace;
+        selectionArrowObj.GetComponent<RectTransform>().sizeDelta = new Vector2(2f, 2f);
+        selectionArrowObj.AddComponent<Billboard>(); 
+
+        GameObject txtObj = new GameObject("ArrowText");
+        txtObj.transform.SetParent(selectionArrowObj.transform, false);
+        UnityEngine.UI.Text txt = txtObj.AddComponent<UnityEngine.UI.Text>();
+        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        txt.alignment = TextAnchor.LowerCenter; // Point exactly at the character
+        txt.fontSize = 120; 
+        txt.color = isAlly ? new Color(0.2f, 0.9f, 0.2f, 1f) : new Color(0.9f, 0.2f, 0.2f, 1f);
+        UnityEngine.UI.Outline outline = txtObj.AddComponent<UnityEngine.UI.Outline>();
+        outline.effectColor = Color.black;
+        outline.effectDistance = new Vector2(2, -2);
+        txt.text = "▼";
+        
+        RectTransform txtRect = txtObj.GetComponent<RectTransform>();
+        txtRect.anchorMin = Vector2.zero;
+        txtRect.anchorMax = Vector2.one;
+        txtRect.offsetMin = Vector2.zero;
+        txtRect.offsetMax = Vector2.zero;
+        txtRect.localScale = new Vector3(0.015f, 0.015f, 1f); // Scale down for WorldSpace
+        
+        selectionArrowObj.SetActive(false);
+    }
+
     void Start()
     {
+        CreateSelectionArrow();
         if (!isPosInit)
         {
             originalPosition = transform.position;
@@ -443,6 +482,7 @@ public class CharacterInteraction : MonoBehaviour
             mat.SetFloat("_IsGlowing", 1); // Giữ Glow luôn bật khi đã chọn
         }
         if (selectionCircle != null) selectionCircle.SetActive(true); // Bật vòng chân
+        if (selectionArrowObj != null) selectionArrowObj.SetActive(true);
         
         // Hiện Boss HUD nếu là quái
         if (!isAlly && BattleUIManager.Instance != null)
@@ -458,7 +498,8 @@ public class CharacterInteraction : MonoBehaviour
         {
             mat.SetFloat("_IsGlowing", 0);
         }
-        if (selectionCircle != null) selectionCircle.SetActive(false); // Tắt vòng chân
+        if (selectionCircle != null) selectionCircle.SetActive(false);
+        if (selectionArrowObj != null) selectionArrowObj.SetActive(false);
         
         if (!isAlly && hideBossHUD && BattleUIManager.Instance != null)
         {

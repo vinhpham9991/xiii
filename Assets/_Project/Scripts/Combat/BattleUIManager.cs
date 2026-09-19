@@ -74,6 +74,47 @@ public class BattleUIManager : MonoBehaviour
 
     // Phải gọi sau khi BattleManager đã gom đủ Allies
     private Dictionary<ActionType, Image> actionButtons = new Dictionary<ActionType, Image>();
+    private List<ActionType> currentMenuOptions = new List<ActionType>();
+    private int activeMenuIndex = 0;
+
+    
+    public void ChangeMenuSelection(int direction)
+    {
+        if (currentMenuOptions.Count == 0) return;
+        activeMenuIndex = (activeMenuIndex + direction + currentMenuOptions.Count) % currentMenuOptions.Count;
+        HighlightActiveMenuOption();
+    }
+
+    public void ConfirmMenuSelection()
+    {
+        if (currentMenuOptions.Count > 0 && activeMenuIndex >= 0 && activeMenuIndex < currentMenuOptions.Count)
+        {
+            ActionType selectedType = currentMenuOptions[activeMenuIndex];
+            OnActionButtonClicked(selectedType);
+        }
+    }
+
+    private void HighlightActiveMenuOption()
+    {
+        for (int i = 0; i < currentMenuOptions.Count; i++)
+        {
+            ActionType t = currentMenuOptions[i];
+            if (actionButtons.ContainsKey(t))
+            {
+                if (i == activeMenuIndex)
+                {
+                    // Highlight color (Bright Gold)
+                    actionButtons[t].color = new Color(0.9f, 0.7f, 0.1f, 1f);
+                    // EventSystem.current.SetSelectedGameObject(actionButtons[t].gameObject);
+                }
+                else
+                {
+                    // Default color
+                    actionButtons[t].color = new Color(0.2f, 0.2f, 0.3f, 1f);
+                }
+            }
+        }
+    }
 
     private void CreateButton(string label, ActionType type, Transform parent)
     {
@@ -83,6 +124,7 @@ public class BattleUIManager : MonoBehaviour
         Image btnImg = btnObj.AddComponent<Image>();
         btnImg.color = new Color(0.2f, 0.2f, 0.3f, 1f);
         actionButtons[type] = btnImg;
+        currentMenuOptions.Add(type);
 
         Button btn = btnObj.AddComponent<Button>();
         btn.onClick.AddListener(() => OnActionButtonClicked(type));
@@ -269,11 +311,12 @@ public class BattleUIManager : MonoBehaviour
         soulRect.anchorMin = new Vector2(1f, 0f);
         soulRect.anchorMax = new Vector2(1f, 0f);
         soulRect.pivot = new Vector2(1f, 0f);
-        soulRect.anchoredPosition = new Vector2(-10f, 10f);
-        soulRect.sizeDelta = new Vector2(110f, 160f);
+        soulRect.anchoredPosition = new Vector2(-20f, 40f);
+        soulRect.sizeDelta = new Vector2(130f, 130f);
 
+        // SoulVessel bg is invisible because it's just a wrapper
         Image soulPanelBg = soulVessel.AddComponent<Image>();
-        soulPanelBg.color = new Color(0.15f, 0.15f, 0.2f, 0.9f);
+        soulPanelBg.color = new Color(0f, 0f, 0f, 0f);
 
         VerticalLayoutGroup soulVLayout = soulVessel.AddComponent<VerticalLayoutGroup>();
         soulVLayout.padding = new RectOffset(8, 8, 8, 8);
@@ -291,7 +334,7 @@ public class BattleUIManager : MonoBehaviour
         soulCapLe.minHeight = 45;
         soulCapLe.flexibleHeight = 0;
         Image soulCapBg = soulCapLabel.AddComponent<Image>();
-        soulCapBg.color = new Color(0.25f, 0.25f, 0.35f, 1f);
+        soulCapBg.color = new Color(0.12f, 0.12f, 0.18f, 1f);
 
         GameObject soulCapTextObj = new GameObject("SoulCapText");
         soulCapTextObj.transform.SetParent(soulCapLabel.transform, false);
@@ -336,7 +379,7 @@ public class BattleUIManager : MonoBehaviour
         exeLe.flexibleHeight = 1; // Co giãn chiếm phần còn lại
 
         Image exeBg = exeObj.AddComponent<Image>();
-        exeBg.color = new Color(0.9f, 0.6f, 0.0f, 1f); // Màu cam vàng như thiết kế
+        exeBg.color = new Color(0.9f, 0.55f, 0.0f, 1f); // Màu cam vàng như thiết kế
 
         Button exeBtn = exeObj.AddComponent<Button>();
         executeBtn = exeBtn;
@@ -566,124 +609,164 @@ public class BattleUIManager : MonoBehaviour
     }
 
     private GameObject actionBarHud;
+    private GameObject enemyActionBarHud;
     
     // Lưu các node UI: actionNodes[actorName][beatIndex]
     private Dictionary<string, Image[]> actionNodesMap = new Dictionary<string, Image[]>();
+    private Dictionary<string, Image[]> enemyActionNodesMap = new Dictionary<string, Image[]>();
+    
+    private Dictionary<string, Text> allyHpTextsMap = new Dictionary<string, Text>();
+    private Dictionary<string, Text> enemyHpTextsMap = new Dictionary<string, Text>();
+    
+    private Dictionary<string, Image> allyHpFillsMap = new Dictionary<string, Image>();
+    private Dictionary<string, Image> allyRowBgsMap = new Dictionary<string, Image>();
+    private Dictionary<string, Image> enemyHpFillsMap = new Dictionary<string, Image>();
+    private Dictionary<string, Image[]> enemyLimitSegmentsMap = new Dictionary<string, Image[]>();
     
     private Button executeBtn;
 
+    private Image[] soulDots;
+
     private void CreateActionBar(Transform parent)
     {
-        actionBarHud = new GameObject("ActionBarGrid");
-        actionBarHud.transform.SetParent(parent, false);
+        // Wrapper for Action Bar
+        GameObject rightHudWrapper = new GameObject("RightHudWrapper");
+        rightHudWrapper.transform.SetParent(parent, false);
+        HorizontalLayoutGroup wrapperLayout = rightHudWrapper.AddComponent<HorizontalLayoutGroup>();
+        wrapperLayout.spacing = 0;
+        wrapperLayout.childControlHeight = true;
+        wrapperLayout.childControlWidth = true;
+        wrapperLayout.childAlignment = TextAnchor.LowerRight;
 
+        // Action Bar Grid
+        actionBarHud = new GameObject("ActionBarGrid");
+        actionBarHud.transform.SetParent(rightHudWrapper.transform, false);
         VerticalLayoutGroup vLayout = actionBarHud.AddComponent<VerticalLayoutGroup>();
         vLayout.spacing = 2;
-        vLayout.padding = new RectOffset(4, 4, 4, 4);
+        vLayout.padding = new RectOffset(6, 6, 6, 6);
         vLayout.childAlignment = TextAnchor.LowerLeft;
         vLayout.childControlHeight = true;
         vLayout.childControlWidth = true;
-        vLayout.childForceExpandHeight = false;
-        vLayout.childForceExpandWidth = false;
 
         Image gridBg = actionBarHud.AddComponent<Image>();
-        gridBg.color = new Color(0f, 0f, 0f, 0.55f);
+        gridBg.color = new Color(0f, 0f, 0f, 0.85f); // Black background
 
-        // --- HEADER ROW (Beat labels) ---
-        {
-            GameObject headerRow = new GameObject("HeaderRow");
-            headerRow.transform.SetParent(actionBarHud.transform, false);
-            HorizontalLayoutGroup hl = headerRow.AddComponent<HorizontalLayoutGroup>();
-            hl.spacing = 4;
-            hl.childControlHeight = true;
-            hl.childControlWidth = true;
-
-            // Blank cell để canh với cột Avatar
-            CreateHeaderCell(headerRow.transform, "", 36);
-            // Blank cell để canh với cột Name
-            CreateHeaderCell(headerRow.transform, "", 52);
-            // Beat labels
-            CreateHeaderCell(headerRow.transform, "Beat 1", 56);
-            CreateHeaderCell(headerRow.transform, "Beat 2", 56);
-        }
-
-        // --- DATA ROWS ---
         string[] actorNames = new string[] { "XIII", "An", "Mac" };
+        
+        allyHpTextsMap.Clear();
+        allyHpFillsMap.Clear();
 
+        allyRowBgsMap.Clear();
         foreach (string actorName in actorNames)
         {
             GameObject rowObj = new GameObject("Row_" + actorName);
             rowObj.transform.SetParent(actionBarHud.transform, false);
+            Image rowBg = rowObj.AddComponent<Image>();
+            rowBg.color = new Color(0.1f, 0.4f, 0.8f, 0f); // Default transparent
+            allyRowBgsMap[actorName] = rowBg;
+
             
             HorizontalLayoutGroup hLayout = rowObj.AddComponent<HorizontalLayoutGroup>();
-            hLayout.spacing = 4;
-            hLayout.padding = new RectOffset(0, 0, 1, 1);
+            hLayout.spacing = 2;
+            hLayout.padding = new RectOffset(0, 0, 0, 0);
             hLayout.childAlignment = TextAnchor.MiddleLeft;
             hLayout.childControlHeight = true;
             hLayout.childControlWidth = true;
 
-            // Avatar
             GameObject avatarObj = new GameObject("Avatar");
             avatarObj.transform.SetParent(rowObj.transform, false);
             LayoutElement avatarLe = avatarObj.AddComponent<LayoutElement>();
-            avatarLe.minWidth = 36;
-            avatarLe.minHeight = 28;
+            avatarLe.minWidth = 32;
+            avatarLe.minHeight = 32;
+            avatarLe.preferredWidth = 32;
+            avatarLe.preferredHeight = 32;
+            avatarLe.flexibleWidth = 0;
             Image avatarImg = avatarObj.AddComponent<Image>();
+            avatarImg.preserveAspect = true;
             
             Sprite sp = Resources.Load<Sprite>("UI/" + actorName + "-icon");
             if (sp == null)
             {
                 Texture2D tex = Resources.Load<Texture2D>("UI/" + actorName + "-icon");
-                if (tex != null) sp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
+                if (tex != null)
+                {
+                    sp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
+                }
             }
+
             if (sp != null) avatarImg.sprite = sp;
-            else avatarImg.color = new Color(0.35f, 0.35f, 0.45f, 1f);
+            else avatarImg.color = new Color(0.27f, 0.27f, 0.33f, 1f);
 
-            // Name label
-            GameObject labelObj = new GameObject("Label");
-            labelObj.transform.SetParent(rowObj.transform, false);
-            LayoutElement labelLe = labelObj.AddComponent<LayoutElement>();
-            labelLe.minWidth = 52;
-            labelLe.minHeight = 28;
-            Text labelTxt = labelObj.AddComponent<Text>();
+            // HP Bar Wrapper
+            GameObject hpWrapper = new GameObject("HpWrapper");
+            hpWrapper.transform.SetParent(rowObj.transform, false);
+            LayoutElement hpLe = hpWrapper.AddComponent<LayoutElement>();
+            hpLe.minWidth = 60;
+            hpLe.minHeight = 16;
+            Image hpBg = hpWrapper.AddComponent<Image>();
+            hpBg.color = new Color(0.1f, 0.1f, 0.1f, 1f); // Dark background
+            
+            GameObject hpFillObj = new GameObject("HpFill");
+            hpFillObj.transform.SetParent(hpWrapper.transform, false);
+            Image hpFill = hpFillObj.AddComponent<Image>();
+            hpFill.color = new Color(0.2f, 0.7f, 0.3f, 1f); // Green health
+            RectTransform fillRect = hpFillObj.GetComponent<RectTransform>();
+            fillRect.anchorMin = new Vector2(0, 0);
+            fillRect.anchorMax = new Vector2(1, 1);
+            fillRect.pivot = new Vector2(0, 0.5f);
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+            allyHpFillsMap[actorName] = hpFill;
+
+            GameObject hpTextObj = new GameObject("HpText");
+            hpTextObj.transform.SetParent(hpWrapper.transform, false);
+            Text labelTxt = hpTextObj.AddComponent<Text>();
             labelTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            labelTxt.text = actorName;
-            labelTxt.fontSize = 11;
-            labelTxt.color = new Color(0.85f, 0.85f, 0.9f, 1f);
-            labelTxt.alignment = TextAnchor.MiddleLeft;
+            labelTxt.text = "HP: ?/?";
+            labelTxt.fontSize = 10;
+            labelTxt.color = Color.white;
+            labelTxt.alignment = TextAnchor.MiddleCenter;
+            RectTransform txtRect = hpTextObj.GetComponent<RectTransform>();
+            txtRect.anchorMin = Vector2.zero; txtRect.anchorMax = Vector2.one;
+            txtRect.offsetMin = Vector2.zero; txtRect.offsetMax = Vector2.zero;
+            
+            allyHpTextsMap[actorName] = labelTxt;
 
-            // Beat nodes (2 beats)
             Image[] nodes = new Image[2];
             for (int i = 0; i < 2; i++)
             {
                 GameObject nodeObj = new GameObject("Node_" + i);
                 nodeObj.transform.SetParent(rowObj.transform, false);
-                LayoutElement le = nodeObj.AddComponent<LayoutElement>();
-                le.minWidth = 56;
-                le.minHeight = 28;
+                LayoutElement nodeLe = nodeObj.AddComponent<LayoutElement>();
+                nodeLe.minWidth = 36;
+                nodeLe.minHeight = 32;
+                
                 Image bg = nodeObj.AddComponent<Image>();
-                bg.color = new Color(0.18f, 0.18f, 0.25f, 0.9f);
+                bg.color = new Color(0.12f, 0.12f, 0.18f, 1f);
+                
+                GameObject textObj = new GameObject("Text");
+                textObj.transform.SetParent(nodeObj.transform, false);
+                Text actionText = textObj.AddComponent<Text>();
+                actionText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                actionText.text = "";
+                actionText.fontSize = 12;
+                actionText.color = Color.white;
+                actionText.alignment = TextAnchor.MiddleCenter;
 
-                Outline outline = nodeObj.AddComponent<Outline>();
-                outline.effectColor = new Color(0.4f, 0.4f, 0.6f, 0.6f);
-                outline.effectDistance = new Vector2(1, -1);
-
-                GameObject iconObj = new GameObject("Icon");
-                iconObj.transform.SetParent(nodeObj.transform, false);
-                Image iconImg = iconObj.AddComponent<Image>();
-                iconImg.color = Color.white;
-                iconImg.enabled = false;
-
-                RectTransform iconRect = iconObj.GetComponent<RectTransform>();
-                iconRect.anchorMin = Vector2.zero;
-                iconRect.anchorMax = Vector2.one;
-                iconRect.offsetMin = new Vector2(3, 3);
-                iconRect.offsetMax = new Vector2(-3, -3);
-
-                nodes[i] = iconImg;
+                RectTransform textRect = actionText.GetComponent<RectTransform>();
+                textRect.anchorMin = Vector2.zero; textRect.anchorMax = Vector2.one;
+                textRect.offsetMin = Vector2.zero; textRect.offsetMax = Vector2.zero;
+                
+                nodes[i] = bg;
             }
             actionNodesMap[actorName] = nodes;
         }
+
+        RectTransform mainRect = rightHudWrapper.GetComponent<RectTransform>();
+        mainRect.anchorMin = new Vector2(1, 0); mainRect.anchorMax = new Vector2(1, 0);
+        mainRect.pivot = new Vector2(1, 0);
+        mainRect.sizeDelta = new Vector2(300, 130);
+        mainRect.anchoredPosition = new Vector2(-35, 24);
     }
 
     private void CreateHeaderCell(Transform parent, string label, float minW)
@@ -704,13 +787,23 @@ public class BattleUIManager : MonoBehaviour
     public void UpdateActionBar(List<BeatPlan> plan)
     {
         // Clear old visual
-        foreach (var nodes in actionNodesMap.Values)
+        foreach (var kvp in actionNodesMap)
         {
-            nodes[0].enabled = false;
-            nodes[1].enabled = false;
+            foreach (var nodeBg in kvp.Value)
+            {
+                nodeBg.color = new Color(0.2f, 0.2f, 0.25f, 1f);
+                if (nodeBg.transform.childCount > 0)
+                {
+                    Text txt = nodeBg.transform.GetChild(0).GetComponent<Text>();
+                    if (txt != null) txt.text = "";
+                }
+            }
         }
 
-        // Đếm số action cho từng nhân vật để biết đặt vào cột nào
+        if (plan == null) return;
+        
+        UpdateEnemyActionBar(plan);
+
         Dictionary<string, int> actorActionCount = new Dictionary<string, int>();
 
         foreach (var beat in plan)
@@ -718,39 +811,86 @@ public class BattleUIManager : MonoBehaviour
             foreach (var action in beat.actions)
             {
                 if (action.actor == null) continue;
-                string baseName = action.actor.characterName;
-                if (baseName.Contains("XIII")) baseName = "XIII";
-                else if (baseName.Contains("An")) baseName = "An";
-                else if (baseName.Contains("Mac")) baseName = "Mac";
-                
+                string baseName = action.actor.characterName.Replace("Ally_", "").Replace("Enemy_", "");
                 if (!actorActionCount.ContainsKey(baseName)) actorActionCount[baseName] = 0;
-                
-                int slotIndex = actorActionCount[baseName];
-                if (slotIndex < 2 && actionNodesMap.ContainsKey(baseName))
+
+                int i = actorActionCount[baseName];
+                if (actionNodesMap.ContainsKey(baseName) && i < actionNodesMap[baseName].Length)
                 {
-                    Image nodeImg = actionNodesMap[baseName][slotIndex];
+                    Image nodeBg = actionNodesMap[baseName][i];
+                    nodeBg.color = (action.type == ActionType.ATTACK) ? new Color(0.3f, 0.4f, 0.6f, 1f) : new Color(0.7f, 0.2f, 0.2f, 1f);
                     
-                    // Lấy icon của mục tiêu
-                    string iconName = action.target.characterName + "-icon";
-                    Sprite sp = Resources.Load<Sprite>("UI/" + iconName);
-                    if (sp == null)
+                    if (nodeBg.transform.childCount > 0)
                     {
-                        Texture2D tex = Resources.Load<Texture2D>("UI/" + iconName);
-                        if (tex != null) sp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
+                        Text txt = nodeBg.transform.GetChild(0).GetComponent<Text>();
+                        if (txt != null)
+                        {
+                            txt.text = (action.type == ActionType.ATTACK) ? "Attack" : "Skill";
+                        }
                     }
-                    if (sp != null)
-                    {
-                        nodeImg.sprite = sp;
-                        nodeImg.enabled = true;
-                    }
-                    else
-                    {
-                        // Fallback: icon vũ khí/skill
-                        nodeImg.color = (action.type == ActionType.ATTACK) ? Color.red : Color.blue;
-                        nodeImg.enabled = true;
-                    }
-                    
                     actorActionCount[baseName]++;
+                }
+            }
+        }
+    }
+
+    public void UpdateEnemyActionBar(List<BeatPlan> plan)
+    {
+        if (enemyActionBarHud == null) return;
+
+        // Clear old visual
+        foreach (var kvp in enemyActionNodesMap)
+        {
+            for (int i = 0; i < kvp.Value.Length; i++)
+            {
+                Image nodeBg = kvp.Value[i];
+                bool isActive = (kvp.Key == "Boss" && i < 3) || (kvp.Key != "Boss" && i < 1);
+                nodeBg.color = isActive ? new Color(0.15f, 0.15f, 0.25f, 1f) : new Color(0.1f, 0.1f, 0.12f, 0.5f);
+                if (nodeBg.transform.childCount > 0)
+                {
+                    Text txt = nodeBg.transform.GetChild(0).GetComponent<Text>();
+                    if (txt != null)
+                    {
+                        txt.text = isActive ? "-" : "";
+                        txt.color = isActive ? Color.white : new Color(0.5f, 0.5f, 0.5f, 1f);
+                    }
+                }
+            }
+        }
+
+        if (plan == null) return;
+        Dictionary<string, int> actorActionCount = new Dictionary<string, int>();
+
+        foreach (var beat in plan)
+        {
+            foreach (var action in beat.actions)
+            {
+                if (action.actor == null || action.actor.isAlly) continue;
+                string baseName = action.actor.characterName.Replace("Ally_", "").Replace("Enemy_", "");
+                
+                // Map internal names to display labels
+                string displayLabel = "Enemy 1";
+                if (baseName.ToLower().Contains("boss")) displayLabel = "Boss";
+                else if (baseName.Contains("2")) displayLabel = "Enemy 2";
+                
+                if (!actorActionCount.ContainsKey(displayLabel)) actorActionCount[displayLabel] = 0;
+
+                int i = actorActionCount[displayLabel];
+                if (enemyActionNodesMap.ContainsKey(displayLabel) && i < enemyActionNodesMap[displayLabel].Length)
+                {
+                    Image nodeBg = enemyActionNodesMap[displayLabel][i];
+                    nodeBg.color = (action.type == ActionType.ATTACK) ? new Color(0.3f, 0.4f, 0.6f, 1f) : new Color(0.7f, 0.2f, 0.2f, 1f);
+                    
+                    if (nodeBg.transform.childCount > 0)
+                    {
+                        Text txt = nodeBg.transform.GetChild(0).GetComponent<Text>();
+                        if (txt != null)
+                        {
+                            txt.text = (action.type == ActionType.ATTACK) ? "Attack" : "Skill";
+                            txt.color = Color.white;
+                        }
+                    }
+                    actorActionCount[displayLabel]++;
                 }
             }
         }
@@ -758,66 +898,39 @@ public class BattleUIManager : MonoBehaviour
 
     private void CreateEnemyPlanHud(Transform parent)
     {
-        // Main grid container
-        GameObject gridObj = new GameObject("EnemyGrid");
-        gridObj.transform.SetParent(parent, false);
-        Image gridBg = gridObj.AddComponent<Image>();
-        gridBg.color = new Color(0f, 0f, 0f, 0.55f);
+        if (enemyActionBarHud != null) return;
+        
+        enemyActionBarHud = new GameObject("EnemyActionBarGrid");
+        enemyActionBarHud.transform.SetParent(parent, false);
 
-        RectTransform gridRect = gridObj.GetComponent<RectTransform>();
-        gridRect.anchorMin = Vector2.zero;
-        gridRect.anchorMax = Vector2.one;
-        gridRect.offsetMin = Vector2.zero;
-        gridRect.offsetMax = Vector2.zero;
-
-        VerticalLayoutGroup vLayout = gridObj.AddComponent<VerticalLayoutGroup>();
+        VerticalLayoutGroup vLayout = enemyActionBarHud.AddComponent<VerticalLayoutGroup>();
         vLayout.spacing = 2;
-        vLayout.padding = new RectOffset(4, 4, 4, 4);
+        vLayout.padding = new RectOffset(6, 6, 6, 6);
         vLayout.childAlignment = TextAnchor.LowerLeft;
         vLayout.childControlHeight = true;
         vLayout.childControlWidth = true;
         vLayout.childForceExpandHeight = false;
         vLayout.childForceExpandWidth = false;
 
-        // --- HEADER ROW ---
-        // Beat counts: Boss=3, E1=1, E2=1. Dùng max=3 cột beat cho header
-        {
-            GameObject headerRow = new GameObject("EnemyHeaderRow");
-            headerRow.transform.SetParent(gridObj.transform, false);
-            HorizontalLayoutGroup hl = headerRow.AddComponent<HorizontalLayoutGroup>();
-            hl.spacing = 4;
-            hl.childControlHeight = true;
-            hl.childControlWidth = true;
+        Image gridBg = enemyActionBarHud.AddComponent<Image>();
+        gridBg.color = new Color(0f, 0f, 0f, 0.85f); // Black background
 
-            // Blanks căn cột Avatar + Name
-            CreateHeaderCell(headerRow.transform, "", 36);
-            CreateHeaderCell(headerRow.transform, "", 52);
-            // Beat headers
-            CreateHeaderCell(headerRow.transform, "Beat 1", 50);
-            CreateHeaderCell(headerRow.transform, "Beat 2", 50);
-            CreateHeaderCell(headerRow.transform, "Beat 3", 50);
-        }
-
-        // --- DATA ROWS ---
-        // Chỉ 3 hàng: Boss (đầu), Enemy 1, Enemy 2
         string[] enemyLabels = new string[] { "Boss", "Enemy 1", "Enemy 2" };
-        Color[] enemyColors = new Color[]
-        {
-            new Color(0.9f, 0.4f, 0.0f, 1f),   // Boss: cam
-            new Color(0.7f, 0.2f, 0.2f, 1f),   // E1: đỏ
-            new Color(0.7f, 0.2f, 0.2f, 1f),   // E2: đỏ
-        };
-        int[] beatCounts = new int[] { 3, 1, 1 }; // Boss: 3 beat, lính: 1 beat
+        int[] beatCounts = new int[] { 3, 1, 1 }; 
+        int[] limitCounts = new int[] { 5, 2, 2 }; // Boss: 5, Enemy: 2
+
+        enemyHpTextsMap.Clear();
+        enemyHpFillsMap.Clear();
+        enemyLimitSegmentsMap.Clear();
 
         for (int e = 0; e < enemyLabels.Length; e++)
         {
-            bool isBoss = (e == 0);
-            GameObject rowObj = new GameObject("EnemyRow_" + e);
-            rowObj.transform.SetParent(gridObj.transform, false);
-
+            string eLabel = enemyLabels[e];
+            GameObject rowObj = new GameObject("Row_" + eLabel);
+            rowObj.transform.SetParent(enemyActionBarHud.transform, false);
             HorizontalLayoutGroup hLayout = rowObj.AddComponent<HorizontalLayoutGroup>();
-            hLayout.spacing = 4;
-            hLayout.padding = new RectOffset(0, 0, 1, 1);
+            hLayout.spacing = 2;
+            hLayout.padding = new RectOffset(0, 0, 0, 0);
             hLayout.childAlignment = TextAnchor.MiddleLeft;
             hLayout.childControlHeight = true;
             hLayout.childControlWidth = true;
@@ -826,72 +939,134 @@ public class BattleUIManager : MonoBehaviour
             GameObject avatarObj = new GameObject("Avatar");
             avatarObj.transform.SetParent(rowObj.transform, false);
             LayoutElement avatarLe = avatarObj.AddComponent<LayoutElement>();
-            avatarLe.minWidth = 36;
-            avatarLe.minHeight = 24;
+            avatarLe.minWidth = 32;
+            avatarLe.minHeight = 32;
+            avatarLe.preferredWidth = 32;
+            avatarLe.preferredHeight = 32;
+            avatarLe.flexibleWidth = 0;
             Image avatarImg = avatarObj.AddComponent<Image>();
-            avatarImg.color = new Color(enemyColors[e].r * 0.5f, enemyColors[e].g * 0.5f, enemyColors[e].b * 0.5f, 1f);
-
-            // Name label
-            GameObject labelObj = new GameObject("Label");
-            labelObj.transform.SetParent(rowObj.transform, false);
-            LayoutElement labelLe = labelObj.AddComponent<LayoutElement>();
-            labelLe.minWidth = 52;
-            labelLe.minHeight = 24;
-            Text labelTxt = labelObj.AddComponent<Text>();
-            labelTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            labelTxt.text = enemyLabels[e];
-            labelTxt.fontSize = isBoss ? 12 : 10;
-            labelTxt.fontStyle = isBoss ? FontStyle.Bold : FontStyle.Normal;
-            labelTxt.color = enemyColors[e];
-            labelTxt.alignment = TextAnchor.MiddleLeft;
-
-            // Beat node cells
-            for (int i = 0; i < 3; i++)
+            avatarImg.preserveAspect = true;
+            
+            string spriteName = (eLabel == "Boss") ? "Boss-icon" : "enemy-icon";
+            Sprite sp = Resources.Load<Sprite>("UI/" + spriteName);
+            if (sp == null)
             {
-                bool hasAction = (i < beatCounts[e]);
-                GameObject nodeObj = new GameObject("EnemyNode_" + i);
-                nodeObj.transform.SetParent(rowObj.transform, false);
-                LayoutElement le = nodeObj.AddComponent<LayoutElement>();
-                le.minWidth = 50;
-                le.minHeight = 24;
-                Image bg = nodeObj.AddComponent<Image>();
-
-                if (hasAction)
+                Texture2D tex = Resources.Load<Texture2D>("UI/" + spriteName);
+                if (tex != null)
                 {
-                    bg.color = isBoss
-                        ? new Color(0.3f, 0.12f, 0.0f, 0.9f)  // Boss: cam thẫm
-                        : new Color(0.25f, 0.08f, 0.08f, 0.9f); // Enemy: đỏ thẫm
-
-                    Outline outline = nodeObj.AddComponent<Outline>();
-                    outline.effectColor = isBoss
-                        ? new Color(0.8f, 0.4f, 0.0f, 0.6f)
-                        : new Color(0.6f, 0.2f, 0.2f, 0.6f);
-                    outline.effectDistance = new Vector2(1, -1);
-
-                    GameObject qMarkObj = new GameObject("QMark");
-                    qMarkObj.transform.SetParent(nodeObj.transform, false);
-                    Text qMark = qMarkObj.AddComponent<Text>();
-                    qMark.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                    qMark.text = "?";
-                    qMark.fontSize = 14;
-                    qMark.fontStyle = FontStyle.Bold;
-                    qMark.color = isBoss
-                        ? new Color(0.9f, 0.5f, 0.0f, 0.7f)
-                        : new Color(0.7f, 0.25f, 0.25f, 0.7f);
-                    qMark.alignment = TextAnchor.MiddleCenter;
-                    RectTransform qRect = qMarkObj.GetComponent<RectTransform>();
-                    qRect.anchorMin = Vector2.zero;
-                    qRect.anchorMax = Vector2.one;
-                    qRect.offsetMin = Vector2.zero;
-                    qRect.offsetMax = Vector2.zero;
-                }
-                else
-                {
-                    // Ô trống (enemy không đủ beat)
-                    bg.color = new Color(0.1f, 0.1f, 0.12f, 0.5f);
+                    sp = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
                 }
             }
+
+            if (sp != null) avatarImg.sprite = sp;
+            else avatarImg.color = (eLabel == "Boss") ? new Color(0.8f, 0.23f, 0.23f, 1f) : new Color(0.2f, 0.2f, 0.2f, 1f);
+
+            // Info Column (HP + Limit)
+            GameObject infoCol = new GameObject("InfoCol");
+            infoCol.transform.SetParent(rowObj.transform, false);
+            LayoutElement infoLe = infoCol.AddComponent<LayoutElement>();
+            infoLe.minWidth = 60;
+            VerticalLayoutGroup infoVLayout = infoCol.AddComponent<VerticalLayoutGroup>();
+            infoVLayout.spacing = 1;
+            infoVLayout.childControlHeight = true;
+            infoVLayout.childControlWidth = true;
+            infoVLayout.childAlignment = TextAnchor.MiddleLeft;
+            
+            // HP Bar Wrapper
+            GameObject hpWrapper = new GameObject("HpWrapper");
+            hpWrapper.transform.SetParent(infoCol.transform, false);
+            LayoutElement hpLe = hpWrapper.AddComponent<LayoutElement>();
+            hpLe.minHeight = 16;
+            Image hpBg = hpWrapper.AddComponent<Image>();
+            hpBg.color = new Color(0.1f, 0.1f, 0.1f, 1f); // Dark background
+            
+            GameObject hpFillObj = new GameObject("HpFill");
+            hpFillObj.transform.SetParent(hpWrapper.transform, false);
+            Image hpFill = hpFillObj.AddComponent<Image>();
+            hpFill.color = new Color(0.8f, 0.2f, 0.2f, 1f); // Red health
+            RectTransform fillRect = hpFillObj.GetComponent<RectTransform>();
+            fillRect.anchorMin = new Vector2(0, 0);
+            fillRect.anchorMax = new Vector2(1, 1);
+            fillRect.pivot = new Vector2(0, 0.5f);
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+            enemyHpFillsMap[eLabel] = hpFill;
+
+            GameObject hpTextObj = new GameObject("HpText");
+            hpTextObj.transform.SetParent(hpWrapper.transform, false);
+            Text hpTxt = hpTextObj.AddComponent<Text>();
+            hpTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            hpTxt.text = "HP: ?/?";
+            hpTxt.fontSize = 10;
+            hpTxt.color = Color.white;
+            hpTxt.alignment = TextAnchor.MiddleCenter;
+            RectTransform txtRect = hpTextObj.GetComponent<RectTransform>();
+            txtRect.anchorMin = Vector2.zero; txtRect.anchorMax = Vector2.one;
+            txtRect.offsetMin = Vector2.zero; txtRect.offsetMax = Vector2.zero;
+            enemyHpTextsMap[eLabel] = hpTxt;
+            
+            // Limit Wrapper
+            GameObject limitWrapper = new GameObject("LimitWrapper");
+            limitWrapper.transform.SetParent(infoCol.transform, false);
+            LayoutElement limitLe = limitWrapper.AddComponent<LayoutElement>();
+            limitLe.minHeight = 8;
+            HorizontalLayoutGroup limitHLayout = limitWrapper.AddComponent<HorizontalLayoutGroup>();
+            limitHLayout.spacing = 1;
+            limitHLayout.childControlWidth = true;
+            limitHLayout.childControlHeight = true;
+            
+            int maxLim = limitCounts[e];
+            Image[] limitSegs = new Image[maxLim];
+            for(int j=0; j<maxLim; j++) {
+                GameObject segObj = new GameObject("Seg_" + j);
+                segObj.transform.SetParent(limitWrapper.transform, false);
+                Image segImg = segObj.AddComponent<Image>();
+                segImg.color = new Color(0.2f, 0.2f, 0.2f, 1f); // Empty
+                limitSegs[j] = segImg;
+            }
+            enemyLimitSegmentsMap[eLabel] = limitSegs;
+
+            // Cells
+            Image[] nodes = new Image[3];
+            for (int i = 0; i < 3; i++)
+            {
+                bool isActive = (i < beatCounts[e]);
+                GameObject nodeObj = new GameObject("EnemyNode_" + i);
+                nodeObj.transform.SetParent(rowObj.transform, false);
+                LayoutElement nodeLe = nodeObj.AddComponent<LayoutElement>();
+                nodeLe.minWidth = 36;
+                nodeLe.minHeight = 32;
+                
+                Image bg = nodeObj.AddComponent<Image>();
+                bg.color = isActive ? new Color(0.12f, 0.12f, 0.18f, 1f) : new Color(0f, 0f, 0f, 0f);
+                
+                if (isActive)
+                {
+                    GameObject textObj = new GameObject("Text");
+                    textObj.transform.SetParent(nodeObj.transform, false);
+                    Text actionText = textObj.AddComponent<Text>();
+                    actionText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                    actionText.text = "-";
+                    actionText.fontSize = 12;
+                    actionText.color = Color.white;
+                    actionText.alignment = TextAnchor.MiddleCenter;
+
+                    RectTransform textRect = actionText.GetComponent<RectTransform>();
+                    textRect.anchorMin = Vector2.zero; textRect.anchorMax = Vector2.one;
+                    textRect.offsetMin = Vector2.zero; textRect.offsetMax = Vector2.zero;
+                }
+                
+                nodes[i] = bg;
+            }
+            enemyActionNodesMap[eLabel] = nodes;
         }
+        
+        RectTransform rect = enemyActionBarHud.GetComponent<RectTransform>();
+        rect.anchorMin = new Vector2(0, 0);
+        rect.anchorMax = new Vector2(0, 0);
+        rect.pivot = new Vector2(0, 0);
+        rect.sizeDelta = new Vector2(300, 130);
+        rect.anchoredPosition = new Vector2(30, 24);
     }
 
     private GameObject skillMenu;
@@ -899,82 +1074,7 @@ public class BattleUIManager : MonoBehaviour
 
     private void CreateAllyHUDBlock(CharacterInteraction ally, Transform parent)
     {
-        GameObject block = new GameObject("AllyBlock_" + ally.characterName);
-        block.transform.SetParent(parent, false);
-        
-        // Thêm LayoutElement để định cỡ cho block
-        LayoutElement le = block.AddComponent<LayoutElement>();
-        le.minWidth = 220; // Tăng kích thước block
-        le.minHeight = 60;
-
-        Image bg = block.AddComponent<Image>();
-        bg.color = new Color(0.1f, 0.1f, 0.1f, 0.8f);
-
-        // Bấm vào HUD block này cũng chọn nhân vật
-        Button blockBtn = block.AddComponent<Button>();
-        blockBtn.onClick.AddListener(() => {
-            if (BattleManager.Instance != null && 
-               (BattleManager.Instance.state == BattleState.WAIT_TARGET || BattleManager.Instance.state == BattleState.PLAYER_TURN))
-            {
-                BattleManager.Instance.OnTargetSelected(ally);
-            }
-        });
-
-        GameObject nameObj = new GameObject("Name");
-        nameObj.transform.SetParent(block.transform, false);
-        Text nameTxt = nameObj.AddComponent<Text>();
-        nameTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        nameTxt.text = ally.characterName;
-        nameTxt.alignment = TextAnchor.UpperCenter;
-        nameTxt.fontSize = 16;
-        nameTxt.color = Color.white;
-        RectTransform nameRect = nameObj.GetComponent<RectTransform>();
-        nameRect.anchorMin = new Vector2(0, 0.5f);
-        nameRect.anchorMax = new Vector2(1, 1);
-        nameRect.offsetMin = Vector2.zero;
-        nameRect.offsetMax = Vector2.zero;
-
-        GameObject hpBg = new GameObject("HP_BG");
-        hpBg.transform.SetParent(block.transform, false);
-        Image hpBgImg = hpBg.AddComponent<Image>();
-        hpBgImg.color = Color.black;
-        RectTransform hpBgRect = hpBg.GetComponent<RectTransform>();
-        hpBgRect.anchorMin = new Vector2(0.1f, 0.1f);
-        hpBgRect.anchorMax = new Vector2(0.9f, 0.4f);
-        hpBgRect.offsetMin = Vector2.zero;
-        hpBgRect.offsetMax = Vector2.zero;
-
-        GameObject hpFillObj = new GameObject("HP_Fill");
-        hpFillObj.transform.SetParent(hpBg.transform, false);
-        Image hpFillImg = hpFillObj.AddComponent<Image>();
-        hpFillImg.color = Color.green;
-        
-        RectTransform hpFillRect = hpFillObj.GetComponent<RectTransform>();
-        hpFillRect.anchorMin = Vector2.zero;
-        float startFill = (float)ally.currentHP / ally.maxHP;
-        hpFillRect.anchorMax = new Vector2(startFill, 1f);
-        hpFillRect.offsetMin = Vector2.zero;
-        hpFillRect.offsetMax = Vector2.zero;
-
-        GameObject hpTextObj = new GameObject("HP_Text");
-        hpTextObj.transform.SetParent(hpBg.transform, false);
-        Text hpTxt = hpTextObj.AddComponent<Text>();
-        hpTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        hpTxt.text = ally.currentHP + "/" + ally.maxHP;
-        hpTxt.alignment = TextAnchor.MiddleCenter;
-        hpTxt.fontSize = 16;
-        hpTxt.color = Color.white;
-        Outline aOutline = hpTextObj.AddComponent<Outline>();
-        aOutline.effectColor = Color.black;
-        aOutline.effectDistance = new Vector2(1, -1);
-        RectTransform hpTextRect = hpTextObj.GetComponent<RectTransform>();
-        hpTextRect.anchorMin = Vector2.zero;
-        hpTextRect.anchorMax = Vector2.one;
-        hpTextRect.offsetMin = Vector2.zero;
-        hpTextRect.offsetMax = Vector2.zero;
-
-        allyHpFills[ally] = hpFillRect;
-        allyHpTexts[ally] = hpTxt;
+        // Removed as per request (HP is now in Action Bar)
     }
 
     // Move CreateButton up so SetupUI can use it, but since I already did that, I will just delete this one down here
@@ -1026,27 +1126,25 @@ public class BattleUIManager : MonoBehaviour
 
     public void UpdateSoulUI()
     {
-        if (BattleManager.Instance == null || soulText == null) return;
-        
-        int red = BattleManager.Instance.currentRedSoul;
-        int blue = BattleManager.Instance.currentBlueSoul;
-        int total = red + blue;
-        
-        // Format gọn cho panel nhỏ bên phải: "Soul capacity\n6/9"
-        soulText.text = "Soul capacity\n" + total + "/9";
-        
-        // Cập nhật icon (nhỏ 8x8px)
-        for (int i = 0; i < 9; i++)
+        if (soulText != null && BattleManager.Instance != null)
         {
-            if (i < soulIcons.Count)
-            {
-                if (i < 3) // 3 slot đầu là Đỏ
-                {
-                    soulIcons[i].color = (i < red) ? Color.red : new Color(0.3f, 0, 0, 0.4f);
-                }
-                else // 6 slot sau là Xanh
-                {
-                    soulIcons[i].color = (i - 3 < blue) ? Color.cyan : new Color(0, 0.3f, 0.3f, 0.4f);
+            int red = BattleManager.Instance.currentRedSoul;
+            int blue = BattleManager.Instance.currentBlueSoul;
+            int soul = red + blue;
+            int limit = 9; // Giả sử max là 9
+            soulText.text = "Soul capacity\n" + soul + "/" + limit;
+            
+            if (soulIcons != null) {
+                for(int i=0; i<soulIcons.Count; i++) {
+                    if(soulIcons[i] != null) {
+                        if (i < red) {
+                            soulIcons[i].color = new Color(0.9f, 0.2f, 0.2f, 1f); // Red
+                        } else if (i < red + blue) {
+                            soulIcons[i].color = new Color(0.2f, 0.7f, 0.9f, 1f); // Blue
+                        } else {
+                            soulIcons[i].color = new Color(1f, 1f, 1f, 0.2f); // Empty
+                        }
+                    }
                 }
             }
         }
@@ -1060,13 +1158,15 @@ public class BattleUIManager : MonoBehaviour
             // Đừng ẩn actionMenu, để nó bên cạnh
             // actionMenu.SetActive(!show); 
             
-            if (actionButtons.ContainsKey(ActionType.SKILL))
+            // Disable keyboard nav for menu if skill is open
+            if (show)
             {
-                actionButtons[ActionType.SKILL].color = show ? new Color(0.8f, 0.6f, 0.1f, 1f) : new Color(0.2f, 0.2f, 0.3f, 1f);
+                if (actionButtons.ContainsKey(ActionType.SKILL))
+                    actionButtons[ActionType.SKILL].color = new Color(0.8f, 0.6f, 0.1f, 1f);
             }
-            if (show && actionButtons.ContainsKey(ActionType.ITEM))
+            else 
             {
-                actionButtons[ActionType.ITEM].color = new Color(0.2f, 0.2f, 0.3f, 1f);
+                HighlightActiveMenuOption();
             }
 
             if (show && activeActorTransform != null)
@@ -1170,13 +1270,14 @@ public class BattleUIManager : MonoBehaviour
         {
             itemMenu.SetActive(show);
             
-            if (actionButtons.ContainsKey(ActionType.ITEM))
+            if (show)
             {
-                actionButtons[ActionType.ITEM].color = show ? new Color(0.8f, 0.6f, 0.1f, 1f) : new Color(0.2f, 0.2f, 0.3f, 1f);
+                if (actionButtons.ContainsKey(ActionType.ITEM))
+                    actionButtons[ActionType.ITEM].color = new Color(0.8f, 0.6f, 0.1f, 1f);
             }
-            if (show && actionButtons.ContainsKey(ActionType.SKILL))
+            else
             {
-                actionButtons[ActionType.SKILL].color = new Color(0.2f, 0.2f, 0.3f, 1f);
+                HighlightActiveMenuOption();
             }
 
             if (show)
@@ -1266,8 +1367,35 @@ public class BattleUIManager : MonoBehaviour
         txtRect.offsetMin = Vector2.zero; txtRect.offsetMax = Vector2.zero;
     }
 
+    
+    public bool IsActionMenuOpen()
+    {
+        return actionMenu != null && actionMenu.activeSelf && (skillMenu == null || !skillMenu.activeSelf) && (itemMenu == null || !itemMenu.activeSelf);
+    }
+
     public void ShowActionMenu(bool show, Transform actorTransform = null)
     {
+        // Update HUD Backgrounds
+        if (allyRowBgsMap != null)
+        {
+            string selectedName = "";
+            if (show && actorTransform != null)
+            {
+                selectedName = actorTransform.name.Replace("Ally_", "");
+            }
+            foreach (var kvp in allyRowBgsMap)
+            {
+                if (kvp.Key == selectedName)
+                {
+                    kvp.Value.color = new Color(0.1f, 0.4f, 0.8f, 0.5f); // Blue semi-transparent
+                }
+                else
+                {
+                    kvp.Value.color = new Color(0f, 0f, 0f, 0f);
+                }
+            }
+        }
+
         if (actionMenu != null)
         {
             actionMenu.SetActive(show);
@@ -1284,10 +1412,9 @@ public class BattleUIManager : MonoBehaviour
                 actionMenu.GetComponent<RectTransform>().position = screenPos;
 
                 // Auto-select ATTACK
-                if (actionButtons.ContainsKey(ActionType.ATTACK))
-                {
-                    EventSystem.current.SetSelectedGameObject(actionButtons[ActionType.ATTACK].gameObject);
-                }
+                // Reset navigation
+                activeMenuIndex = 0;
+                HighlightActiveMenuOption();
             }
             else
             {
@@ -1299,79 +1426,65 @@ public class BattleUIManager : MonoBehaviour
 
     public void ShowBossHUD(CharacterInteraction enemy)
     {
-        if (bossHud != null && enemy != null)
-        {
-            bossHud.SetActive(true);
-            bossNameText.text = enemy.characterName;
-            float target = (float)enemy.currentHP / enemy.maxHP;
-            UpdateHPImage(bossHpFillRect, target);
-            if (bossHpText != null)
-            {
-                bossHpText.text = enemy.currentHP + "/" + enemy.maxHP;
-            }
-            UpdateLimitHUD(enemy);
-        }
+        // Removed as per request (HP is now in Action Bar)
     }
 
     public void UpdateLimitHUD(CharacterInteraction enemy)
     {
-        if (bossHud != null && bossHud.activeSelf && bossNameText.text == enemy.characterName)
-        {
-            if (bossLimitSegments != null)
-            {
-                for (int i = 0; i < bossLimitSegments.Length; i++)
-                {
-                    if (i < enemy.maxLimit)
-                    {
-                        bossLimitSegments[i].gameObject.SetActive(true);
-                        bossLimitSegments[i].color = (i < enemy.currentLimit) ? new Color(0.6f, 0.2f, 0.8f, 1f) : new Color(0.2f, 0.1f, 0.3f, 0.8f);
-                    }
-                    else
-                    {
-                        bossLimitSegments[i].gameObject.SetActive(false);
-                    }
-                }
-            }
-        }
+        // Removed as per request (HP is now in Action Bar)
     }
 
     public void HideBossHUD()
     {
-        if (bossHud != null) bossHud.SetActive(false);
+        // Removed as per request (HP is now in Action Bar)
     }
 
     private Dictionary<RectTransform, Coroutine> hpRoutines = new Dictionary<RectTransform, Coroutine>();
 
     public void UpdateHP(CharacterInteraction character)
     {
-        if (character.isAlly && allyHpFills.ContainsKey(character))
+        string baseName = character.characterName.Replace("Ally_", "").Replace("Enemy_", "");
+        float hpPercent = (float)character.currentHP / character.maxHP;
+        
+        if (character.isAlly)
         {
-            UpdateHPImage(allyHpFills[character], (float)character.currentHP / character.maxHP);
-            if (allyHpTexts.ContainsKey(character) && allyHpTexts[character] != null)
+            if (allyHpTextsMap.ContainsKey(baseName) && allyHpTextsMap[baseName] != null)
             {
-                allyHpTexts[character].text = character.currentHP + "/" + character.maxHP;
+                allyHpTextsMap[baseName].text = "HP: " + character.currentHP + "/" + character.maxHP;
+            }
+            if (allyHpFillsMap.ContainsKey(baseName) && allyHpFillsMap[baseName] != null)
+            {
+                UpdateHPImage(allyHpFillsMap[baseName].rectTransform, hpPercent);
             }
         }
-        else if (bossHud != null && bossHud.activeSelf && bossNameText.text == character.characterName)
+        else
         {
-            UpdateHPImage(bossHpFillRect, (float)character.currentHP / character.maxHP);
-            if (bossHpText != null)
+            string displayLabel = "Enemy 1";
+            if (baseName.ToLower().Contains("boss")) displayLabel = "Boss";
+            else if (baseName.Contains("2")) displayLabel = "Enemy 2";
+            
+            if (enemyHpTextsMap.ContainsKey(displayLabel) && enemyHpTextsMap[displayLabel] != null)
             {
-                bossHpText.text = character.currentHP + "/" + character.maxHP;
+                enemyHpTextsMap[displayLabel].text = "HP: " + character.currentHP + "/" + character.maxHP;
             }
-
-            // Update Boss Limit
-            if (bossLimitSegments != null)
+            if (enemyHpFillsMap.ContainsKey(displayLabel) && enemyHpFillsMap[displayLabel] != null)
             {
-                for (int i = 0; i < bossLimitSegments.Length; i++)
+                UpdateHPImage(enemyHpFillsMap[displayLabel].rectTransform, hpPercent);
+            }
+            UpdateEnemyLimitHUD(character, displayLabel);
+        }
+    }
+    
+    public void UpdateEnemyLimitHUD(CharacterInteraction enemy, string displayLabel)
+    {
+        if (enemyLimitSegmentsMap.ContainsKey(displayLabel) && enemyLimitSegmentsMap[displayLabel] != null)
+        {
+            Image[] segs = enemyLimitSegmentsMap[displayLabel];
+            for (int i = 0; i < segs.Length; i++)
+            {
+                if (segs[i] != null)
                 {
-                    if (i < character.maxLimit)
-                    {
-                        if (i < character.currentLimit)
-                            bossLimitSegments[i].color = new Color(0.6f, 0.2f, 0.8f, 1f); // Purple
-                        else
-                            bossLimitSegments[i].color = new Color(0.2f, 0.1f, 0.3f, 0.8f); // Dark
-                    }
+                    segs[i].color = (i < enemy.currentLimit) ? new Color(0.6f, 0.2f, 0.8f, 1f) : new Color(0.2f, 0.2f, 0.2f, 1f);
                 }
             }
         }

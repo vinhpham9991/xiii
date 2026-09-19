@@ -168,13 +168,33 @@ public class BattleManager : MonoBehaviour
 
     public void CancelActorSelection()
     {
+        if (currentActor != null)
+        {
+            currentActor.Deselect(false);
+        }
+        if (currentHighlight != null)
+        {
+            currentHighlight.Deselect(false);
+        }
+        currentHighlight = null;
         currentActor = null;
+        currentTarget = null;
+        
+        if (state == BattleState.WAIT_TARGET)
+        {
+            state = BattleState.PLAYER_TURN;
+        }
+        if (BattleUIManager.Instance != null)
+        {
+            BattleUIManager.Instance.ShowActionMenu(false);
+        }
+        
         PlayerTurn();
     }
 
     private void SetHighlight(CharacterInteraction character)
     {
-        if (currentHighlight != null && currentHighlight != currentTarget && currentHighlight != currentActor)
+        if (currentHighlight != null && currentHighlight != character && currentHighlight != currentActor)
         {
             currentHighlight.Deselect(false); // Bỏ glow nhưng không giấu Boss HUD nếu là enemy
         }
@@ -207,7 +227,88 @@ public class BattleManager : MonoBehaviour
             Debug.Log("Secondary Character Switch");
         }
 
-        if (state == BattleState.PLAYER_TURN && currentActor == null && !isExecuting)
+        if (state == BattleState.PLAYER_TURN && currentActor != null && !isExecuting)
+        {
+            // Action Menu is open
+            if (BattleUIManager.Instance.IsActionMenuOpen())
+            {
+                if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
+                {
+                    BattleUIManager.Instance.ChangeMenuSelection(-1);
+                }
+                else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+                {
+                    BattleUIManager.Instance.ChangeMenuSelection(1);
+                }
+                else if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    BattleUIManager.Instance.ConfirmMenuSelection();
+                }
+                else if (Input.GetKeyDown(KeyCode.Backspace))
+                {
+                    CancelActorSelection();
+                }
+            }
+
+            // Remove Action (Delete)
+            if (Input.GetKeyDown(KeyCode.Delete) && playerPlan.Count > 0)
+            {
+                if (currentActor != null)
+                {
+                    PlannedAction actionToRemove = null;
+                    for (int i = playerPlan.Count - 1; i >= 0; i--)
+                    {
+                        for (int j = playerPlan[i].actions.Count - 1; j >= 0; j--)
+                        {
+                            if (playerPlan[i].actions[j].actor == currentActor)
+                            {
+                                actionToRemove = playerPlan[i].actions[j];
+                                playerPlan[i].actions.RemoveAt(j);
+                                break;
+                            }
+                        }
+                        if (actionToRemove != null) break;
+                    }
+
+                    if (actionToRemove != null)
+                    {
+                        // Clean up empty beats at the end
+                        for (int i = playerPlan.Count - 1; i >= 0; i--)
+                        {
+                            if (playerPlan[i].actions.Count == 0) playerPlan.RemoveAt(i);
+                            else break;
+                        }
+
+                        if (actionToRemove.skill != null)
+                        {
+                            if (actionToRemove.skill.skillName == "MÃºa Ä áº¡i Ä ao")
+                            {
+                                currentActor.currentLimit++;
+                                currentActor.UpdateMiniLimit();
+                            }
+                            else
+                            {
+                                currentRedSoul += actionToRemove.skill.soulCost;
+                            }
+                        }
+                        BattleUIManager.Instance.UpdateSoulUI();
+                        BattleUIManager.Instance.UpdateActionBar(playerPlan);
+                        BattleUIManager.Instance.ShowMessage("Ä Ã£ xÃ³a hÃ nh Ä‘á»™ng má»›i nháº¥t cá»§a " + currentActor.characterName);
+                    }
+                }
+            }
+            
+            // Quick-Switch Characters (Works even if Skill/Item menu is open)
+            if (Input.GetKeyDown(KeyCode.Q) || Input.GetKeyDown(KeyCode.PageUp))
+            {
+                SwitchActiveActor(-1);
+            }
+            else if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.PageDown))
+            {
+                SwitchActiveActor(1);
+            }
+        }
+        else if (state == BattleState.PLAYER_TURN && currentActor == null && !isExecuting)
         {
             // Execute planned actions (Enter)
             if ((Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) && playerPlan.Count > 0)
@@ -216,17 +317,52 @@ public class BattleManager : MonoBehaviour
                 return;
             }
 
-            // Clear Action (Delete)
+                        // Remove Action (Delete) - For Highlighted Character
             if (Input.GetKeyDown(KeyCode.Delete) && playerPlan.Count > 0)
             {
-                playerPlan.Clear();
-                currentRedSoul = MAX_RED_SOUL;
-                foreach (var a in allies) { 
-                    if (!a.isDead) { a.currentLimit = a.maxLimit; a.UpdateMiniLimit(); }
+                if (currentHighlight != null && currentHighlight.isAlly)
+                {
+                    PlannedAction actionToRemove = null;
+                    for (int i = playerPlan.Count - 1; i >= 0; i--)
+                    {
+                        for (int j = playerPlan[i].actions.Count - 1; j >= 0; j--)
+                        {
+                            if (playerPlan[i].actions[j].actor == currentHighlight)
+                            {
+                                actionToRemove = playerPlan[i].actions[j];
+                                playerPlan[i].actions.RemoveAt(j);
+                                break;
+                            }
+                        }
+                        if (actionToRemove != null) break;
+                    }
+
+                    if (actionToRemove != null)
+                    {
+                        // Clean up empty beats at the end
+                        for (int i = playerPlan.Count - 1; i >= 0; i--)
+                        {
+                            if (playerPlan[i].actions.Count == 0) playerPlan.RemoveAt(i);
+                            else break;
+                        }
+
+                        if (actionToRemove.skill != null)
+                        {
+                            if (actionToRemove.skill.skillName == "MÃºa Ä áº¡i Ä ao")
+                            {
+                                currentHighlight.currentLimit++;
+                                currentHighlight.UpdateMiniLimit();
+                            }
+                            else
+                            {
+                                currentRedSoul += actionToRemove.skill.soulCost;
+                            }
+                        }
+                        BattleUIManager.Instance.UpdateSoulUI();
+                        BattleUIManager.Instance.UpdateActionBar(playerPlan);
+                        BattleUIManager.Instance.ShowMessage("Ä Ã£ xÃ³a hÃ nh Ä‘á»™ng má»›i nháº¥t cá»§a " + currentHighlight.characterName);
+                    }
                 }
-                BattleUIManager.Instance.UpdateSoulUI();
-                BattleUIManager.Instance.UpdateActionBar(playerPlan);
-                BattleUIManager.Instance.ShowMessage("Đã xóa toàn bộ kế hoạch Phe Ta!");
                 return;
             }
 
@@ -294,6 +430,59 @@ public class BattleManager : MonoBehaviour
                 DeselectAll();
             }
         }
+    }
+
+    
+    private void HandleGridNavigation(int xDir, int zDir)
+    {
+        if (currentHighlight == null || !currentHighlight.isAlly) return;
+
+        string currentName = currentHighlight.characterName.Replace("Ally_", "");
+        string targetName = currentName;
+
+        if (currentName == "XIII") // Top-Left
+        {
+            if (xDir > 0) targetName = "Mac";
+            if (zDir < 0) targetName = "An";
+        }
+        else if (currentName == "An") // Bottom-Left
+        {
+            if (zDir > 0) targetName = "XIII";
+            if (xDir > 0) targetName = "Mac"; // jump to Mac
+        }
+        else if (currentName == "Mac") // Top-Right
+        {
+            if (xDir < 0) targetName = "XIII";
+            if (zDir < 0) targetName = "An"; // jump to An
+        }
+
+        if (targetName != currentName)
+        {
+            CharacterInteraction nextChar = allies.Find(a => a.characterName.Contains(targetName) && !a.isDead);
+            if (nextChar != null)
+            {
+                SetHighlight(nextChar);
+            }
+        }
+    }
+
+    private void SwitchActiveActor(int dir)
+    {
+        List<CharacterInteraction> aliveAllies = allies.FindAll(a => !a.isDead);
+        if (aliveAllies.Count <= 1) return;
+
+        int idx = aliveAllies.IndexOf(currentActor);
+        if (idx == -1) idx = 0;
+        idx = (idx + dir + aliveAllies.Count) % aliveAllies.Count;
+
+        // Select new actor
+        CharacterInteraction nextActor = aliveAllies[idx];
+        
+        // Clean up current actor UI state
+        CancelActorSelection(); // Resets currentActor = null, hides menu, deselects
+
+        SetHighlight(nextActor);
+        OnTargetSelected(nextActor);
     }
 
     private void CycleHighlight(List<CharacterInteraction> list, int direction)
@@ -456,6 +645,29 @@ public class BattleManager : MonoBehaviour
             
             // Đợi xíu trước khi văng hạt tiếp theo (nếu amount > 1)
             yield return new WaitForSeconds(0.2f);
+        }
+    }
+
+
+    public void CancelAction()
+    {
+        if (state != BattleState.WAIT_TARGET) return;
+        
+        state = BattleState.PLAYER_TURN;
+        if (currentHighlight != null)
+        {
+            currentHighlight.Deselect(false);
+            currentHighlight = null;
+        }
+        currentTarget = null;
+        
+        // Tráº£ láº¡i view cho nhÃ¢n váº­t hiá»‡n táº¡i
+        RotateCameraTo(defaultCamRot);
+        
+        if (currentActor != null)
+        {
+            SetHighlight(currentActor);
+            BattleUIManager.Instance.ShowActionMenu(true, currentActor.transform);
         }
     }
 

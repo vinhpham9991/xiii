@@ -10,13 +10,13 @@ public class ReplayButton : MonoBehaviour
     void Start()
     {
         // Căn góc dưới bên trái. IMGUI có gốc (0,0) ở góc trên bên trái.
-        buttonRect = new Rect(20, Screen.height - 70, 120, 50);
+        buttonRect = new Rect(20, 20, 120, 50);
     }
 
     void OnGUI()
     {
         // Cập nhật lại vị trí nếu đổi kích thước màn hình
-        buttonRect = new Rect(20, Screen.height - 70, 120, 50);
+        buttonRect = new Rect(20, 20, 120, 50);
 
         Rect displayRect = buttonRect;
         if (isPressed)
