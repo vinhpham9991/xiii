@@ -81,46 +81,42 @@ Shader "Custom/URP_SpriteGlow"
                 
                 if (_IsGlowing > 0.5)
                 {
-                    // Lấy mẫu nhiều lần xung quanh (Multi-tap Radial Blur) để tạo viền dày và mờ
+                    // Giãn alpha quanh silhouette. Phần alpha giãn trừ alpha gốc
+                    // chính là vùng glow, nên không thể biến thành border của Quad.
                     float2 texel = _MainTex_TexelSize.xy * _GlowThickness;
-                    half blurAlpha = 0;
+                    half dilatedAlpha = 0;
                     
                     // Vòng ngoài
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2( texel.x,  texel.y)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2( texel.x, -texel.y)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2(-texel.x,  texel.y)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2(-texel.x, -texel.y)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2( texel.x, 0)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2(-texel.x, 0)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2(0,  texel.y)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2(0, -texel.y)).a;
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2( texel.x,  texel.y)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2( texel.x, -texel.y)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2(-texel.x,  texel.y)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2(-texel.x, -texel.y)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2( texel.x, 0)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2(-texel.x, 0)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2(0,  texel.y)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2(0, -texel.y)).a);
                     
                     // Vòng trong
                     float2 texel2 = texel * 0.5;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2( texel2.x,  texel2.y)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2( texel2.x, -texel2.y)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2(-texel2.x,  texel2.y)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2(-texel2.x, -texel2.y)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2( texel2.x, 0)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2(-texel2.x, 0)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2(0,  texel2.y)).a;
-                    blurAlpha += SampleSpriteAlpha(i.uv + float2(0, -texel2.y)).a;
-                    
-                    blurAlpha /= 16.0;
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2( texel2.x,  texel2.y)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2( texel2.x, -texel2.y)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2(-texel2.x,  texel2.y)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2(-texel2.x, -texel2.y)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2( texel2.x, 0)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2(-texel2.x, 0)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2(0,  texel2.y)).a);
+                    dilatedAlpha = max(dilatedAlpha, SampleSpriteAlpha(i.uv + float2(0, -texel2.y)).a);
 
-                    // Nếu pixel này trong suốt, nhưng có ảnh mờ ở xung quanh -> Viền Glow Mờ
-                    if (col.a < 0.5 && blurAlpha > 0.01)
+                    half outlineAlpha = saturate(dilatedAlpha - col.a);
+
+                    if (outlineAlpha > 0.01)
                     {
                         // Tạo hiệu ứng chớp tắt nhịp nhàng
                         float pulse = (sin(_Time.y * 4.0) + 1.0) * 0.5; 
                         pulse = 0.7 + 0.3 * pulse; // Dao động nhẹ từ 0.7 đến 1.0
                         
-                        half4 glow = _GlowColor * pulse;
-                        // Fade out ở rìa để mờ dần (saturate giới hạn giá trị từ 0 đến 1)
-                        glow.a = saturate(blurAlpha * 3.0); 
-                        
-                        // Mix màu glow vào (nếu pixel có tí hình ảnh nào thì đè lên luôn)
-                        return glow;
+                        half glowAlpha = smoothstep(0.01, 0.75, outlineAlpha);
+                        return half4(_GlowColor.rgb * pulse, glowAlpha * _GlowColor.a * pulse);
                     }
                 }
                 

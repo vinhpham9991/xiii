@@ -191,6 +191,7 @@ MonoBehaviour:
   originalPosition: {x: 0, y: 0, z: 0}
   isPosInit: 0
   quadAnimator: {fileID: 0}
+  staticGlowPaddingScale: 1.15
 --- !u!136 &511568
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -329,6 +330,7 @@ MonoBehaviour:
   originalPosition: {x: 0, y: 0, z: 0}
   isPosInit: 0
   quadAnimator: {fileID: 0}
+  staticGlowPaddingScale: 1.15
 --- !u!136 &233438830
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -736,7 +738,8 @@ MonoBehaviour:
   breakAtkBuff: 0
   originalPosition: {x: 0, y: 0, z: 0}
   isPosInit: 0
-  quadAnimator: {fileID: 0}
+  quadAnimator: {fileID: 1866169137}
+  staticGlowPaddingScale: 1.15
 --- !u!136 &567360354
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -961,7 +964,10 @@ MonoBehaviour:
   - {fileID: 9045723061357045419, guid: 2af703fc7ff35674e8bf92288b32be22, type: 3}
   - {fileID: -7964084445438717567, guid: 2af703fc7ff35674e8bf92288b32be22, type: 3}
   customOffset: {x: 0, y: 0, z: 0}
+  idleFramesPerSecond: 8
+  actionFramesPerSecond: 12
   paddingScale: 1.5
+  aspectFix: 1
 --- !u!1 &704194056
 GameObject:
   m_ObjectHideFlags: 0
@@ -1364,6 +1370,7 @@ MonoBehaviour:
   originalPosition: {x: 0, y: 0, z: 0}
   isPosInit: 0
   quadAnimator: {fileID: 0}
+  staticGlowPaddingScale: 1.15
 --- !u!136 &1197553852
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1502,6 +1509,7 @@ MonoBehaviour:
   originalPosition: {x: 0, y: 0, z: 0}
   isPosInit: 0
   quadAnimator: {fileID: 0}
+  staticGlowPaddingScale: 1.15
 --- !u!136 &1349683283
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1928,13 +1936,13 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 444c7966eaf078f4f96ba108bebd656d, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+        m_Texture: {fileID: 2800000, guid: 69bdd8c2969375f4f917934b2b660d86, type: 3}
+        m_Scale: {x: 0.22994126, y: 1.4468197}
+        m_Offset: {x: 0.006611392, y: -0.22536294}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: a2e6f41bd9ae7e9478a531fba83007de, type: 3}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
+        m_Texture: {fileID: 2800000, guid: 69bdd8c2969375f4f917934b2b660d86, type: 3}
+        m_Scale: {x: 0.22994126, y: 1.4468197}
+        m_Offset: {x: 0.006611392, y: -0.22536294}
     m_Ints: []
     m_Floats:
     - _GlowThickness: 5
@@ -1944,7 +1952,7 @@ Material:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _FlashColor: {r: 1, g: 1, b: 1, a: 1}
     - _GlowColor: {r: 0, g: 0.5, b: 1, a: 1}
-    - _SpriteUVRect: {r: 0, g: 0, b: 1, a: 1}
+    - _SpriteUVRect: {r: 0.044934936, g: 0.015773673, b: 0.1982291, a: 0.9803201}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!1 &1837962209
@@ -2019,6 +2027,7 @@ MonoBehaviour:
   originalPosition: {x: 0, y: 0, z: 0}
   isPosInit: 0
   quadAnimator: {fileID: 0}
+  staticGlowPaddingScale: 1.15
 --- !u!136 &1837962212
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -2200,6 +2209,7 @@ GameObject:
   - component: {fileID: 1866169136}
   - component: {fileID: 1866169135}
   - component: {fileID: 1866169134}
+  - component: {fileID: 1866169137}
   m_Layer: 0
   m_Name: Visual
   m_TagString: Untagged
@@ -2217,7 +2227,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.590909, y: 2.5, z: 1}
+  m_LocalScale: {x: 2.56, y: 2.56, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 567360356}
@@ -2291,6 +2301,35 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1866169132}
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!114 &1866169137
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1866169132}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eee2d84237c72a247b96efd6be1068d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::QuadAnimator
+  stanceSprite: {fileID: -8204229530492694894, guid: 69bdd8c2969375f4f917934b2b660d86, type: 3}
+  idleSprites:
+  - {fileID: -8204229530492694894, guid: 69bdd8c2969375f4f917934b2b660d86, type: 3}
+  - {fileID: -2512433050255483887, guid: 69bdd8c2969375f4f917934b2b660d86, type: 3}
+  - {fileID: -4317893485859726166, guid: 69bdd8c2969375f4f917934b2b660d86, type: 3}
+  - {fileID: 1440445937659322736, guid: 69bdd8c2969375f4f917934b2b660d86, type: 3}
+  dashSprites: []
+  attackSprites: []
+  downedSprites: []
+  hitSprites: []
+  appearSprites: []
+  jumpSprites: []
+  customOffset: {x: 0, y: -1.195876, z: 0}
+  idleFramesPerSecond: 4
+  actionFramesPerSecond: 4
+  paddingScale: 1.5
+  aspectFix: 0.8
 --- !u!1 &1866808028
 GameObject:
   m_ObjectHideFlags: 0

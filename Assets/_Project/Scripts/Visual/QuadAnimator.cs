@@ -1,6 +1,9 @@
 using UnityEngine;
 using System.Collections;
 
+[DisallowMultipleComponent]
+[RequireComponent(typeof(Renderer))]
+[RequireComponent(typeof(Billboard))]
 public class QuadAnimator : MonoBehaviour
 {
     public Sprite stanceSprite;     // Fallback 1 frame tĩnh (nếu không có idleSprites)
@@ -13,11 +16,16 @@ public class QuadAnimator : MonoBehaviour
     public Sprite[] jumpSprites;
     public Vector3 customOffset = Vector3.zero;
 
+    [SerializeField, Min(1f)] private float idleFramesPerSecond = 8f;
+    [SerializeField, Min(1f)] private float actionFramesPerSecond = 12f;
+
     private Renderer quadRenderer;
     private Coroutine currentAnim;
     private bool isDead = false;
 
     public float paddingScale = 1.5f;
+    [Header("Sửa lỗi ảnh bị bóp méo (x > 1 sẽ làm hình bè ra)")]
+    public float aspectFix = 1.0f;
 
     void Awake()
     {
@@ -37,14 +45,21 @@ public class QuadAnimator : MonoBehaviour
     {
         // Ưu tiên chạy idle animation nếu có, nếu không thì fallback về stance tĩnh
         if (idleSprites != null && idleSprites.Length > 0)
-            PlayAnim("idle");
+            PlayAnim("idle", idleFramesPerSecond);
         else
             PlayAnim("stance");
     }
 
-    public void PlayAnim(string name, float fps = 12f)
+    public void PlayAnim(string name, float fps = -1f)
     {
         if (quadRenderer == null || quadRenderer.material == null) return;
+
+        if (fps <= 0f)
+        {
+            fps = name == "idle" || name == "stance"
+                ? idleFramesPerSecond
+                : actionFramesPerSecond;
+        }
         
         if (currentAnim != null) 
         {
@@ -127,6 +142,23 @@ public class QuadAnimator : MonoBehaviour
         }
     }
 
+    public void ConfigureIdle(Sprite[] frames, float framesPerSecond)
+    {
+        idleSprites = frames ?? System.Array.Empty<Sprite>();
+        stanceSprite = idleSprites.Length > 0 ? idleSprites[0] : null;
+        idleFramesPerSecond = Mathf.Max(1f, framesPerSecond);
+    }
+
+    public void ClearActionAnimations()
+    {
+        dashSprites = System.Array.Empty<Sprite>();
+        attackSprites = System.Array.Empty<Sprite>();
+        downedSprites = System.Array.Empty<Sprite>();
+        hitSprites = System.Array.Empty<Sprite>();
+        appearSprites = System.Array.Empty<Sprite>();
+        jumpSprites = System.Array.Empty<Sprite>();
+    }
+
     private void SetFrame(Sprite sprite)
     {
         if (quadRenderer == null || quadRenderer.material == null || sprite == null) return;
@@ -168,7 +200,7 @@ public class QuadAnimator : MonoBehaviour
         float width  = sprite.rect.width  / ppu;
         float height = sprite.rect.height / ppu;
 
-        transform.localScale = new Vector3(width * paddingScale, height * paddingScale, 1f);
+        transform.localScale = new Vector3(width * paddingScale * aspectFix, height * paddingScale, 1f);
 
         // --- Điều chỉnh vị trí dựa trên Pivot ---
         float normPivotX = sprite.pivot.x / sprite.rect.width;

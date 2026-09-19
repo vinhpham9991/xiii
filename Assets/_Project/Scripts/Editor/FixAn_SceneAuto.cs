@@ -1,16 +1,17 @@
 using UnityEngine;
 using UnityEditor;
 
-public class FixAn_SceneAuto : EditorWindow
+public class FixAn_SceneAuto
 {
     [MenuItem("Tools/An/Fix Scene Auto")]
     public static void FixScene()
     {
         AnAnimationSetupAuto.SetupAnAnimations();
-        AssetDatabase.Refresh(); // Bắt buộc Unity hoàn thành import trước khi đọc tiếp
+        AssetDatabase.Refresh();
 
         string spritesheetPath = "Assets/_Project/Art/Sprites/An/An_idle.png";
         Object[] allAssets = AssetDatabase.LoadAllAssetsAtPath(spritesheetPath);
+        
         Sprite[] idleFrames = new Sprite[4];
         int loadedCount = 0;
 
@@ -30,11 +31,11 @@ public class FixAn_SceneAuto : EditorWindow
 
         if (loadedCount < 4)
         {
-            Debug.LogError("[Fix Scene] Chưa có đủ 4 frame cho An_idle.");
+            Debug.LogError("[Fix Scene] Chưa có đủ 4 frame cho An_idle. Vui lòng chạy lại lệnh.");
             return;
         }
 
-        QuadAnimator[] allQuads = FindObjectsByType<QuadAnimator>(FindObjectsSortMode.None);
+        QuadAnimator[] allQuads = Object.FindObjectsByType<QuadAnimator>(FindObjectsSortMode.None);
         foreach (var quad in allQuads)
         {
             if (quad.transform.parent != null && IsAnCharacter(quad.transform.parent.name))
@@ -43,7 +44,6 @@ public class FixAn_SceneAuto : EditorWindow
             }
         }
 
-        // Cập nhật cả Prefab
         string[] guids = AssetDatabase.FindAssets("t:Prefab");
         foreach (string guid in guids)
         {
@@ -74,7 +74,7 @@ public class FixAn_SceneAuto : EditorWindow
     {
         if (string.IsNullOrEmpty(name)) return false;
         name = name.Trim().ToLower();
-        return name == "an" || name.StartsWith("an ") || name.StartsWith("an_") || name.StartsWith("an(");
+        return name == "an" || name.StartsWith("an ") || name.StartsWith("an_") || name.StartsWith("an(") || name.Contains("ally_an") || name.Contains("an_ally");
     }
 
     private static void UpdateQuad(QuadAnimator quad, Sprite[] idleFrames)
@@ -89,18 +89,31 @@ public class FixAn_SceneAuto : EditorWindow
         }
         quad.idleSprites = idleFrames;
         
-        // Xóa các array cũ của XIII để không bị nhầm
         quad.dashSprites = new Sprite[0];
         quad.attackSprites = new Sprite[0];
         quad.downedSprites = new Sprite[0];
         quad.hitSprites = new Sprite[0];
         quad.appearSprites = new Sprite[0];
         quad.jumpSprites = new Sprite[0];
+        
+        quad.customOffset = new Vector3(0, -1.195876f, 0);
 
         Renderer renderer = quad.GetComponent<Renderer>();
+        if (quad.GetComponent<Billboard>() == null)
+        {
+            Undo.AddComponent<Billboard>(quad.gameObject);
+        }
         if (renderer != null && idleFrames.Length > 0 && idleFrames[0] != null)
         {
             Texture2D tex = idleFrames[0].texture;
+            Sprite sprite = idleFrames[0];
+            
+            float ppu = sprite.pixelsPerUnit > 0 ? sprite.pixelsPerUnit : 100f;
+            float width = sprite.rect.width / ppu;
+            float height = sprite.rect.height / ppu;
+            float paddingScale = quad.paddingScale > 0 ? quad.paddingScale : 1.1f;
+            quad.transform.localScale = new Vector3(width * paddingScale, height * paddingScale, 1f);
+
             if (renderer.sharedMaterial != null)
             {
                 renderer.sharedMaterial.mainTexture = tex;
@@ -115,7 +128,6 @@ public class FixAn_SceneAuto : EditorWindow
                 float uvScaleX = outerUV.z - outerUV.x;
                 float uvScaleY = outerUV.w - outerUV.y;
 
-                float paddingScale = quad.paddingScale > 0 ? quad.paddingScale : 1.1f;
                 float paddedScaleX = uvScaleX * paddingScale;
                 float paddedScaleY = uvScaleY * paddingScale;
                 float paddedOffX = uvOffsetX - (paddedScaleX - uvScaleX) / 2f;
@@ -145,5 +157,5 @@ public class FixAn_SceneAuto : EditorWindow
                 EditorUtility.SetDirty(charInt);
             }
         }
-}
+    }
 }

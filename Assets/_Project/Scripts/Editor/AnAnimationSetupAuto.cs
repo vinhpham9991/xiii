@@ -5,6 +5,9 @@ using System.IO;
 
 public class AnAnimationSetupAuto : EditorWindow
 {
+    public const string IdleSpritesheetPath = "Assets/_Project/Art/Sprites/An/An_idle.png";
+    public const int IdleFrameCount = 4;
+
     [MenuItem("Tools/An/Setup Animations")]
     public static void SetupAnAnimations()
     {
@@ -13,8 +16,8 @@ public class AnAnimationSetupAuto : EditorWindow
 
     private static void SetupIdleAnimation()
     {
-        string spriteName = "An_idle";
-        string spritesheetPath = "Assets/_Project/Art/Sprites/An/" + spriteName + ".png";
+        const string spriteName = "An_idle";
+        const string spritesheetPath = IdleSpritesheetPath;
 
         TextureImporter importer = (TextureImporter)AssetImporter.GetAtPath(spritesheetPath);
         if (importer == null)
@@ -47,7 +50,7 @@ public class AnAnimationSetupAuto : EditorWindow
             }
         }
 
-        int frameCount = 4;
+        int frameCount = IdleFrameCount;
         int frameWidth = totalWidth / frameCount;
 
         List<SpriteMetaData> sprites = new List<SpriteMetaData>();
@@ -57,8 +60,9 @@ public class AnAnimationSetupAuto : EditorWindow
             {
                 name = spriteName + "_" + i,
                 rect = new Rect(i * frameWidth, 0, frameWidth, totalHeight),
-                alignment = 9, 
-                pivot = new Vector2(0.5f, 0.5f)
+                alignment = (int)SpriteAlignment.Custom,
+                // Giữ chân nhân vật trên cùng một baseline như XIII.
+                pivot = new Vector2(0.5f, 0f)
             };
             sprites.Add(smd);
         }

@@ -41,6 +41,9 @@ public class CharacterInteraction : MonoBehaviour
     [Header("Animation")]
     public QuadAnimator quadAnimator;
 
+    [Header("Selection Visual")]
+    [SerializeField, Range(1f, 2f)] private float staticGlowPaddingScale = 1.15f;
+
     void Start()
     {
         if (!isPosInit)
@@ -106,6 +109,8 @@ public class CharacterInteraction : MonoBehaviour
 
         if (childRenderer != null)
         {
+            EnsureStaticGlowPadding();
+
             // Đổi màu Glow theo phe
             if (isAlly)
             {
@@ -125,6 +130,38 @@ public class CharacterInteraction : MonoBehaviour
         if (!isAlly)
         {
             CreateMiniHPBar();
+        }
+    }
+
+    private void EnsureStaticGlowPadding()
+    {
+        if (quadAnimator != null || childRenderer == null || mat == null)
+        {
+            return;
+        }
+
+        if (!mat.HasProperty("_SpriteUVRect"))
+        {
+            return;
+        }
+
+        float padding = Mathf.Max(1f, staticGlowPaddingScale);
+        float offset = -(padding - 1f) * 0.5f;
+        Vector2 textureScale = Vector2.one * padding;
+        Vector2 textureOffset = Vector2.one * offset;
+
+        childRenderer.transform.localScale = Vector3.Scale(
+            childRenderer.transform.localScale,
+            new Vector3(padding, padding, 1f));
+
+        mat.mainTextureScale = textureScale;
+        mat.mainTextureOffset = textureOffset;
+        mat.SetVector("_SpriteUVRect", new Vector4(0f, 0f, 1f, 1f));
+
+        if (mat.HasProperty("_BaseMap"))
+        {
+            mat.SetTextureScale("_BaseMap", textureScale);
+            mat.SetTextureOffset("_BaseMap", textureOffset);
         }
     }
 
@@ -394,7 +431,7 @@ public class CharacterInteraction : MonoBehaviour
         
         if (quadAnimator != null)
         {
-            quadAnimator.PlayAnim(stateName, 12f);
+            quadAnimator.PlayAnim(stateName);
         }
     }
 
