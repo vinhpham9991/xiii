@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 239d9d52b776fe44abf7f861e9558dcd, type: 3}
+  m_Name: Item_HoaLoPhotPho
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: item_hoa_lo
+  displayName: "H\u1ECFa L\u1ECD Ph\u1ED1t-Pho"
+  shortEffect: "150 S\xE1t th\u01B0\u01A1ng + 3 Break Dmg (1 K\u1EBB \u0111\u1ECBch)"
+  flavorLore: "B\xECnh h\xF3a ch\u1EA5t \u0111\xE1nh c\u1EAFp t\u1EEB kho bi\u1EBFn
+    \xE1p d\xE2y \u0111i\u1EC7n b\u1ECB v\u1EE1 van, b\xEAn trong l\xE1ch t\xE1ch
+    \xE1nh l\xE2n tinh xanh l\xE9t. Khi \u0111\u1EADp v\u1EE1, ng\u1ECDn l\u1EEDa
+    h\xF3a h\u1ECDc b\xF9ng ch\xE1y d\u1EEF d\u1ED9i, \u0103n m\xF2n v\u1ECF th\xE9p
+    v\xE0 x\xE9 to\u1EA1c th\u1EBF \u0111\u1EE9ng c\u1EE7a m\u1EE5c ti\xEAu."
+  itemType: 3
+  targetType: 1
+  soulCost: 0
+  initialQuantity: 2
+  primaryValue: 150
+  secondaryValue: 3
+  icon: {fileID: 0}

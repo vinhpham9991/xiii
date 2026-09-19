@@ -1,0 +1,42 @@
+# Unity generated directories
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Build output
+[Bb]uild/
+[Bb]uilds/
+
+# IDE and generated solution files
+.vs/
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.slnx
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity generated crash and temporary files
+sysinfo.txt
+crashlytics-build.properties
+
+# Local logs and historical generated archives
+*.log
+*.zip
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini

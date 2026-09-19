@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 239d9d52b776fe44abf7f861e9558dcd, type: 3}
+  m_Name: Item_Serum13B
+  m_EditorClassIdentifier: Assembly-CSharp::ItemData
+  itemId: item_serum_13b
+  displayName: Serum 13-B
+  shortEffect: "+2 H\u1ED3n Xanh, +30% ATK, t\u1EF1 m\u1EA5t 100 HP"
+  flavorLore: "\u1ED0ng th\u1EE7y tinh ch\u1EE9a dung d\u1ECBch \u0111\u1ECF \u0111\u1EE5c
+    v\u1EDBi chi\u1EBFc kim r\u1EC9 s\xE9t, nh\u1EB7t \u0111\u01B0\u1EE3c tr\xEAn
+    khay d\u1EE5ng c\u1EE5 c\u1EE7a m\u1ED9t l\u1EC1u d\xE3 chi\u1EBFn b\u1ECF hoang.
+    \u0110\xE2m ng\u1EADp v\xE0o c\u01A1 b\u1EAFp s\u1EBD k\xEDch th\xEDch t\u1EE7y
+    s\u1ED1ng \u0111i\xEAn cu\u1ED3ng, \u0111\xE1nh \u0111\u1ED5i th\u1EC3 x\xE1c
+    l\u1EA5y s\u1EE9c b\u1EADt b\u1ED9c ph\xE1t t\u1EE9c th\xEC."
+  itemType: 2
+  targetType: 2
+  soulCost: 0
+  initialQuantity: 1
+  primaryValue: 2
+  secondaryValue: 100
+  icon: {fileID: 0}
