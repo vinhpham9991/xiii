@@ -1,10 +1,10 @@
 # FRANKEN XIII — Project Status & Source-of-Truth Registry
 
-**Status date:** 2026-09-20
+**Status date:** 2026-09-21
 
 **Repository:** `D:\Work\UNity\git\xiii\xiii`
 
-**Baseline revision:** `855c8ef` (`main`); current Task 1–3 working tree is uncommitted.
+**Baseline revision:** `499f023` (`main`); the current Instant Special Task 3 checkpoint is uncommitted.
 
 **Unity version:** `6000.5.8f1`
 
@@ -52,6 +52,8 @@ The resulting Demo maximum is still six player actions when all three Characters
 - Blue Soul rewards are authored as: +2 when Limit is broken into Daze, +1 on Crit, and +1 on Weakpoint when the hit is not already a Crit.
 - There is no Guard command. Defense is proactive through Limit damage and Daze interruption.
 - An's `Nhập Hồn` and Mặc's `Toàn Thức` are instant Special commands: Soul cost, 0 Action Node, two-round cooldown.
+- XIII's `Bản Ngã Tái Sinh` is a scripted 0-Soul climax command unlocked at the 20% Boss HP threshold; the contract also requires an immediate 3 Red + 6 Blue refill, impact freeze, cut-in, finisher, and Phase 3 DPS-race handoff.
+- Special presentation is part of the contract: `Nhập Hồn` requires a vignette/noise/audio treatment, and `Toàn Thức` requires an enemy reticle rather than text-only status.
 - The boss encounter is a multi-entity contract: Bách Mệnh Quan plus two Hộc Tử Thi, phase transitions, 600 feedback damage, damage reduction while drawers protect the coffin, and top-down stun when the coffin is Dazed.
 - Playable Knowledge must change combat or narrative outcomes; it is not optional flavor-only lore.
 
@@ -66,31 +68,43 @@ Status terms:
 
 | Area | Status | Current evidence / gap |
 |---|---|---|
-| Unity compile | VERIFIED | Fresh Unity `6000.5.8f1` EditMode run on the Task 1–3 working tree completed without C# errors. |
-| Windows player build | VERIFIED | Fresh Windows build on the Task 1–3 working tree completed successfully. This proves buildability, not gameplay correctness. |
+| Unity compile | VERIFIED ON CURRENT CHECKPOINT | Unity `6000.5.8f1` imported and compiled the uncommitted Task 3 working tree on 2026-09-21 with 0 C# errors as part of the fresh EditMode test run and Windows player build. |
+| Windows player build | VERIFIED ON CURRENT CHECKPOINT | Fresh `StandaloneWindows64` build completed successfully on 2026-09-21. Artifact: `C:\Users\idola\AppData\Local\Temp\FrankenXIII-Task3-InstantSpecials-Build\FrankenXIII.exe`; log: `C:\Users\idola\AppData\Local\Temp\FrankenXIII-Task3-InstantSpecials-Build\build.log`. This verifies buildability, not PlayMode behavior. |
 | Startup scene | VERIFIED | `Assets/_Project/Scenes/BattlePlaceholder.unity` is the only enabled build scene. |
 | Plan -> Execute loop | IMPLEMENTED, UNVERIFIED | Player actions are grouped by Beat. All actions in the current Beat resolve/cancel before the next Beat begins, then enemy turn runs. Intra-Beat effect ordering remains OPEN; full PlayMode acceptance is pending. |
 | Per-actor Beat budgets | IMPLEMENTED, UNVERIFIED | Each Character has 2 Beats, each regular Enemy has 1, and Boss has 3. Six EditMode rule cases verify these budgets, capacity rejection, and latest-selected-actor Beat lookup; runtime interaction acceptance is pending. |
 | Dual Soul 3 Red + 6 Blue | IMPLEMENTED, UNVERIFIED | Red-first reservation, exact Red/Blue refund provenance, Blue cap, and immediate reward state are implemented and covered by five EditMode domain tests. PlayMode HUD/interaction acceptance is pending. |
-| Seven-layer damage pipeline | PARTIAL | Core formula exists, but `Nhập Hồn` empower remains a `1.0f` TODO and several effects are string-driven. |
+| Seven-layer damage pipeline | PARTIAL | Core formula exists and `Nhập Hồn` now applies x2 damage/Break to An's next resolved offensive skill. Several effects and actor identities remain string-driven, and full numeric pipeline tests are still missing. |
 | Break / Daze | IMPLEMENTED, UNVERIFIED | Daze rewards only on the transition, awarding +2; Crit awards +1 and Weakpoint awards +1 only when the hit is not Crit. Seven reward-rule test cases pass; runtime acceptance is pending. |
 | Trio active skills | PARTIAL | Three runtime-created skills per character exist. Definitions are hard-coded by character-name checks rather than authored data assets. |
-| Instant Specials | MISSING | No operational `Nhập Hồn`, `Toàn Thức`, `Bản Ngã Tái Sinh`, or two-round Special cooldown system. |
+| Instant Specials | PARTIAL | `Nhập Hồn` and `Toàn Thức` execute in Plan Phase, cost 1 Soul Red-first, consume 0 Beats, and use a two-round cooldown. `Nhập Hồn` persists until An resolves a skill and cannot be stacked while charged. `Toàn Thức` charges Soul/cooldown only after a live enemy without an existing Weakpoint is confirmed. XIII's command is 0 Soul/0 Beat; the inclusive `<=20%` unlock, 3 Red + 6 Blue refill, and `egoRebornActivated` state flag exist. Runtime routing still relies on actor/boss display-name substrings, and full PlayMode acceptance is pending. |
+| Special presentation / scripted climax | PARTIAL | Runtime battle messages, Special button labels/states, and a text `[WEAKPOINT]` marker exist. The authored Toàn Thức reticle, Nhập Hồn vignette/noise/audio, pre-charged Nhập Hồn before the Boss, impact freeze, XIII cut-in/finisher, Phase 3 transition, and DPS-race effect are missing. A lethal hit can currently skip the `<=20%` unlock because there is no Boss HP gate/phase transition. Keyboard confirmation also bypasses `Button.interactable`; most handlers guard invalid casts, but an already-active XIII Special can still be invoked again. |
 | Boss multi-entity phases | MISSING | The scene has one boss and two support enemies, but no phase contract, 600 feedback damage, drawer protection, or top-down stun implementation. |
 | Combat consumable contract | PARTIAL | Two demo items are created at runtime; the four locked items and per-item-type round restriction are not implemented. |
 | Narrative / exploration / Playable Knowledge | MISSING | No five-area demo flow, dialogue, investigation, puzzle, world-state, or story-to-combat integration. |
-| Automated tests | VERIFIED | `FrankenXIII.Combat.Domain.Tests` contains 18 passing EditMode cases on Unity `6000.5.8f1` (2026-09-20), covering per-actor Beat budgets/deletion lookup, Soul transactions, and reward rules. Result: `C:\Users\idola\AppData\Local\Temp\FrankenXIII-BeatDecision-Validation\EditMode-results-final.xml`. |
-| Visual/runtime acceptance | UNVERIFIED | No recorded full playthrough or multi-aspect UI acceptance run is attached to this revision. |
+| Automated tests | VERIFIED FOR CURRENT EDITMODE DOMAIN SCOPE | Unity Test Runner on `6000.5.8f1` passed 32/32 EditMode cases, fail 0, skip 0, inconclusive 0, against the uncommitted working tree based on `499f023` on 2026-09-21. Artifact: `C:\Users\idola\AppData\Local\Temp\FrankenXIII-Task3-InstantSpecials-Validation\EditMode-results-retry.xml`. This covers Beat, Soul, reward, and Special rules; it is not PlayMode integration acceptance. |
+| Visual/runtime acceptance | UNVERIFIED | No recorded full playthrough, Special interaction smoke test, or multi-aspect UI acceptance run is attached to this revision. The text Weakpoint marker must not be reported as the authored reticle VFX. |
 
 ## 5. Verified repository facts
 
-- Git branch `main` was clean and synchronized with `origin/main` at audit time.
-- Unity asset metadata check found no missing `.meta`, orphan `.meta`, or duplicate GUID group.
-- The fresh player build completed with five obsolete-API warnings for `FindObjectOfType` / `FindObjectsOfType` usage.
-- The fresh Windows build reported approximately 232.9 MB complete size and included unused-looking AI Inference/Sentis runtime resources.
-- No tracked source, scene, package, or ProjectSettings change was left by the audit.
+- Git branch `main` is based on `499f023`, synchronized with `origin/main`; the current Task 3 checkpoint remains uncommitted.
+- A fresh 2026-09-21 asset metadata scan found 0 missing `.meta`, 0 orphan `.meta`, and 0 duplicate GUID groups across 357 GUID-bearing metadata files.
+- The 2026-09-21 player build completed with 0 C# errors and 29 unique compiler/analyzer warnings. The main categories are obsolete Unity object-search APIs, obsolete sprite/editor APIs, and unsupported/missing serialization metadata.
+- The current Windows build directory is approximately 234.4 MiB. It is an external temporary artifact, not a versioned release package.
+- The Windows artifact includes AI Inference/Sentis runtime resources that may be removable after a package-usage audit.
+- Unity-generated mutations to `ProjectSettings/ProjectSettings.asset` and `Assets/Settings/UniversalRenderPipelineGlobalSettings.asset` were excluded from the Task 3 checkpoint; no intentional package, ProjectSettings, or URP settings change is part of this work.
 
-## 6. Rules for future status updates
+## 6. Task 3 traceability
+
+| Concern | Runtime source | Rule/test evidence |
+|---|---|---|
+| Special identity, state, cooldown, targeting, Soul charge, Nhập Hồn consumption, XIII unlock/refill | [`BattleManager.cs`](Assets/_Project/Scripts/Combat/BattleManager.cs) | [`SpecialCommandRules.cs`](Assets/_Project/Scripts/Combat/Domain/SpecialCommandRules.cs); [`SpecialCommandRulesTests.cs`](Assets/_Project/Tests/EditMode/SpecialCommandRulesTests.cs) |
+| Special menu labels/interactable state, battle messages, text Weakpoint status | [`BattleUIManager.cs`](Assets/_Project/Scripts/Combat/BattleUIManager.cs) | Requires PlayMode/UI acceptance; no integration test currently covers it |
+| Toàn Thức click-target filtering | [`CharacterInteraction.cs`](Assets/_Project/Scripts/Interaction/CharacterInteraction.cs) | Requires PlayMode mouse/keyboard acceptance |
+| Beat/Soul/reward rules | [`Combat/Domain`](Assets/_Project/Scripts/Combat/Domain) | 6 Beat + 5 Soul + 7 reward EditMode cases |
+| Instant Special pure rules | [`SpecialCommandRules.cs`](Assets/_Project/Scripts/Combat/Domain/SpecialCommandRules.cs) | 14 EditMode cases; combined current suite is 32/32 |
+
+## 7. Rules for future status updates
 
 1. Never write `100% complete`, `production-ready`, `playable`, or `PASS` from code inspection alone.
 2. Every automated test count must name the test platform, result artifact, Unity version, Git revision, and execution date.
@@ -99,8 +113,8 @@ Status terms:
 5. If code intentionally diverges from a LOCK rule, create a Director decision first. Do not silently update documentation after the fact.
 6. Keep `Ban_Giao.md` synchronized with this registry. `Guideline.md` describes the current prototype interaction model and must not override the GDD.
 
-## 7. Current release classification
+## 8. Current release classification
 
 **Battle-mechanics prototype — buildable, not a verified Funding Demo vertical slice.**
 
-The next production gate is deeper combat correctness and content architecture: automated damage-pipeline verification, stable character/skill/item IDs, Instant Special commands, and the boss multi-entity contract. A full PlayMode combat smoke test and responsive UI pass remain required before classifying the prototype as a verified combat slice.
+The next production gate is PlayMode evidence for the Instant Special checkpoint, including cancel/no-cost behavior, duplicate-Weakpoint rejection, charged Nhập Hồn persistence, cooldown timing, disabled-button keyboard behavior, and the return to Player Turn after Toàn Thức. That is followed by automated damage-pipeline verification, stable character/skill/item IDs, and the boss multi-entity/HP-gate contract. XIII's authored finisher and presentation must be completed with that boss contract. A full combat smoke test and responsive UI pass remain required before classifying the prototype as a verified combat slice.

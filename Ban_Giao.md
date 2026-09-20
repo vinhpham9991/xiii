@@ -1,10 +1,10 @@
 # BÁO CÁO BÀN GIAO HIỆN TRẠNG — FRANKEN XIII
 
-**Ngày xác minh:** 20/09/2026
+**Ngày xác minh:** 21/09/2026
 
 **Repository:** `D:\Work\UNity\git\xiii\xiii`
 
-**Baseline:** `855c8ef` (`main`); working tree Task 1–3 hiện chưa commit.
+**Baseline:** `499f023` (`main`); working tree hiện chứa checkpoint Task 3 Instant Specials chưa commit.
 
 **Unity:** `6000.5.8f1`
 
@@ -16,7 +16,7 @@
 
 ## 1. Kết luận bàn giao
 
-Repository hiện chứa một prototype trận đánh 2.5D có thể compile và tạo Windows player build. Prototype có luồng chọn nhân vật, xếp action theo Beat riêng của từng actor, Execute theo barrier Beat, enemy turn, Dual Soul, HP/Limit/Daze, skill/item demo, HUD, VFX và audio cơ bản.
+Repository hiện chứa một prototype trận đánh 2.5D có thể compile và tạo Windows player build. Prototype có luồng chọn nhân vật, xếp action theo Beat riêng của từng actor, Execute theo barrier Beat, enemy turn, Dual Soul, HP/Limit/Daze, skill/item demo, logic Instant Special, HUD, VFX và audio cơ bản. Presentation riêng của các Special và climax XIII chưa hoàn chỉnh.
 
 Director decision ngày 20/09/2026 đã thay thế shared queue 6 node: mỗi Character có 2 Beat, Enemy thường có 1 Beat, Boss có 3 Beat. Beat 1 hoàn tất trước Beat 2; Beat 2 hoàn tất trước Beat 3. Tổng tối đa sáu action của phe người chơi là kết quả của `3 Character × 2 Beat`, không phải ngân sách dùng chung linh hoạt.
 
@@ -26,7 +26,7 @@ Không có bằng chứng hiện hành để tuyên bố:
 
 - Combat hoàn thiện 100%.
 - Funding Demo đã playable end-to-end.
-- Có 24/24 hoặc 18/18 integration tests đang tồn tại và pass.
+- Có 24/24 hoặc 18/18 Integration Test suite đang tồn tại và pass; bằng chứng hiện hành là 32/32 EditMode domain cases, không phải PlayMode integration suite.
 - Narrative, Exploration hoặc Playable Knowledge đã được triển khai.
 - Boss Bách Mệnh Quan ba phase và hai Hộc Tử Thi đã tuân thủ full contract.
 - Kiến trúc đã data-driven hoặc production-ready.
@@ -39,19 +39,18 @@ Những tuyên bố PASS trong session summary/log lịch sử chỉ có giá tr
 
 ### Compile và build
 
-- Fresh Unity batch compile trên `6000.5.8f1`: thành công, không có C# error.
-- Fresh Windows player build: thành công.
+- Fresh Unity batch compile trên `6000.5.8f1` ngày 2026-09-21: thành công, không có C# error.
+- Fresh Windows player build trên working tree Task 3: thành công. Artifact: `C:\Users\idola\AppData\Local\Temp\FrankenXIII-Task3-InstantSpecials-Build\FrankenXIII.exe`; log: `C:\Users\idola\AppData\Local\Temp\FrankenXIII-Task3-InstantSpecials-Build\build.log`.
+- Thư mục build hiện khoảng 234.4 MiB; đây là artifact tạm ngoài repository, chưa phải release package được version hóa.
 - Build Settings bật `Assets/_Project/Scenes/BattlePlaceholder.unity`.
-- Build sinh năm warning CS0618 do dùng `FindObjectOfType` / `FindObjectsOfType` obsolete.
-- Working tree hiện chứa checkpoint Task 1–3 chưa commit. Không có thay đổi ngoài phạm vi trong `Packages`, `ProjectSettings` hoặc URP settings sau các lần xác minh.
+- Build có 29 compiler/analyzer warning duy nhất, chủ yếu từ object-search API và sprite/editor API obsolete, cùng các field chưa tương thích Unity serialization. Không có C# error.
+- Working tree hiện chứa checkpoint Task 3 Instant Specials chưa commit. Không có thay đổi chủ đích trong `Packages`, `ProjectSettings` hoặc URP settings.
 
 ### Asset database và repository
 
-- Không phát hiện asset thiếu `.meta`.
-- Không phát hiện orphan `.meta`.
-- Không phát hiện nhóm GUID trùng.
+- Fresh scan ngày 21/09/2026: 0 asset/thư mục thiếu `.meta`, 0 orphan `.meta`, 0 nhóm GUID trùng trên 357 metadata có GUID.
 - `Library`, `Temp`, `Logs`, generated solution/project files và archive cục bộ đã được ignore.
-- Test assembly `FrankenXIII.Combat.Domain.Tests` hiện có 18 EditMode cases; lần chạy Unity `6000.5.8f1` ngày 20/09/2026 pass 18/18, fail 0, skip 0. Result artifact: `C:\Users\idola\AppData\Local\Temp\FrankenXIII-BeatDecision-Validation\EditMode-results-final.xml`.
+- Test assembly `FrankenXIII.Combat.Domain.Tests` hiện có 32 EditMode cases. Unity Test Runner `6000.5.8f1` pass 32/32, fail 0, skip 0, inconclusive 0 trên working tree Task 3 dựa trên `499f023` ngày 2026-09-21. Artifact: `C:\Users\idola\AppData\Local\Temp\FrankenXIII-Task3-InstantSpecials-Validation\EditMode-results-retry.xml`.
 
 Build thành công chỉ xác nhận pipeline tạo player hoạt động. Nó không thay thế PlayMode test, full battle playthrough, UI responsive check hoặc balance validation.
 
@@ -64,14 +63,15 @@ Build thành công chỉ xác nhận pipeline tạo player hoạt động. Nó k
 - `Assets/_Project/Scripts/Combat/BattleManager.cs`
   - State và input combat.
   - Player/enemy plan.
+  - Instant Special state, target selection, cooldown, Soul cost và Nhập Hồn consumption.
   - Soul, inventory, damage, Daze.
   - Action execution, enemy AI, camera, audio và VFX orchestration.
 - `Assets/_Project/Scripts/Combat/BattleUIManager.cs`
   - Runtime HUD construction.
-  - Action/skill/item menu.
-  - Player/enemy action bars, HP, Limit và Soul UI.
+  - Action/skill/item/Special menu và trạng thái interactable/cooldown.
+  - Player/enemy action bars, HP, Limit, Soul UI, `BattleMessage` và text `[WEAKPOINT]` placeholder.
 - `Assets/_Project/Scripts/Interaction/CharacterInteraction.cs`
-  - Character stats, runtime skill fallback, selection, HP/Limit UI và animation bridge.
+  - Character stats, runtime skill fallback, selection, HP/Limit UI, animation bridge và lọc enemy click-target khi chọn Toàn Thức.
 - `Assets/_Project/Scripts/Combat/SkillData.cs`
   - Plain C# runtime skill definition; chưa phải ScriptableObject và chưa có `[Serializable]`.
 - `Assets/_Project/Scripts/Item/ItemData.cs`
@@ -79,9 +79,9 @@ Build thành công chỉ xác nhận pipeline tạo player hoạt động. Nó k
 - `Assets/_Project/Scripts/Combat/PlannedAction.cs`
   - `PlannedAction` lưu provenance Red/Blue Soul; `BeatPlan` nhóm action của cả player và enemy theo từng nhịp.
 - `Assets/_Project/Scripts/Combat/Domain`
-  - Luật thuần C# cho Beat budget theo actor, Soul reservation/refund và Blue Soul reward.
+  - Luật thuần C# cho Beat budget theo actor, Soul reservation/refund, Blue Soul reward và Instant Special.
 - `Assets/_Project/Tests/EditMode`
-  - EditMode tests cho Action Node, Soul economy và reward rules.
+  - 32 EditMode cases: 6 Beat, 5 Soul economy, 7 reward và 14 Special rules.
 
 ### Scene và editor tooling
 
@@ -102,15 +102,16 @@ Build thành công chỉ xác nhận pipeline tạo player hoạt động. Nó k
 | Player planning và Execute | Implemented, chưa nghiệm thu PlayMode | Action được nhóm theo Beat; toàn bộ action trong Beat hiện tại resolve/cancel trước khi chuyển Beat tiếp theo. |
 | Beat riêng theo actor | Implemented, chưa nghiệm thu PlayMode | Character = 2 Beat, Enemy thường = 1 Beat, Boss = 3 Beat; 6 Beat-rule cases pass, gồm latest-action lookup cho actor được chọn. Shared queue 6 node đã bị loại bỏ. |
 | 3 Red + 6 Blue Soul | Implemented, chưa nghiệm thu PlayMode | Red-first reservation, hoàn đúng màu Soul và Blue cap có 5 domain tests pass. |
-| Damage pipeline | Partial | Có công thức chính; `Nhập Hồn` multiplier vẫn TODO. |
+| Damage pipeline | Partial | Có công thức chính; `Nhập Hồn` đã nối x2 Damage/Break cho kỹ năng tấn công kế tiếp của An, nhưng pipeline số học đầy đủ và các nhánh cancel/dead target chưa có automated coverage hoàn chỉnh. |
 | Limit / Daze | Implemented, chưa nghiệm thu PlayMode | Daze transition +2, Crit +1, Weakpoint non-Crit +1; 7 reward cases pass. |
 | Bộ ba active skills | Partial | Skill được tạo bằng code dựa trên chuỗi tên nhân vật. |
-| Instant Specials | Chưa có | Thiếu `Nhập Hồn`, `Toàn Thức`, `Bản Ngã Tái Sinh` và cooldown contract. |
+| Instant Specials | Partial, chưa nghiệm thu PlayMode | `Nhập Hồn` và `Toàn Thức` chạy ngoài Beat plan, cost 1 Soul Red-first và cooldown 2 round. Nhập Hồn giữ charge tới skill resolve và không stack; Toàn Thức chỉ thu phí sau khi xác nhận enemy chưa có Weakpoint. XIII có cost 0, unlock/refill/activation hook ở `<=20%` Boss HP. |
+| Special presentation / climax | Partial | Có button state, battle message và text `[WEAKPOINT]`; thiếu Toàn Thức reticle, Nhập Hồn vignette/noise/audio, pre-charge trước Boss, impact freeze, Phase 3, DPS race, XIII finisher/cut-in. |
 | Boss ba phase + hai Hộc | Chưa có | Scene có ba enemy object nhưng thiếu phase, protection, feedback damage và top-down stun. |
 | Combat items chuẩn Demo | Partial | Chưa có đủ bốn item và round restriction. |
 | Narrative / Exploration | Chưa có | Không có five-area flow, dialogue, puzzle hoặc world state. |
 | Playable Knowledge | Chưa có | Không có evidence-to-combat/narrative integration. |
-| Automated tests | Có | 18/18 EditMode tests pass trên working tree hiện tại; chưa có PlayMode integration suite. |
+| Automated tests | Verified cho phạm vi EditMode domain | Unity Test Runner pass 32/32 domain cases, fail 0, skip 0, inconclusive 0; PlayMode integration suite vẫn còn thiếu. |
 
 ---
 
@@ -125,6 +126,9 @@ Build thành công chỉ xác nhận pipeline tạo player hoạt động. Nó k
 7. Default Volume Profile chứa component test của Render Pipeline với `m_Script: {fileID: 0}`.
 8. Package AI Inference/Sentis được đưa vào player build dù chưa tìm thấy gameplay code sử dụng.
 9. Chưa có active-asset BOM/license chain cho toàn bộ asset shipping.
+10. Runtime xác định An/Mặc/XIII/Boss bằng substring của display name, chưa có stable ID.
+11. Boss chưa có HP gate/phase transition; đòn lethal có thể đi xuyên mốc 20% và bỏ qua unlock Bản Ngã Tái Sinh.
+12. `ConfirmMenuSelection()` không kiểm tra `Button.interactable`; keyboard có thể dispatch Special đang disabled, và XIII đã `ACTIVE` vẫn có thể phát activation message lần nữa.
 
 ---
 
@@ -142,6 +146,14 @@ Build thành công chỉ xác nhận pipeline tạo player hoạt động. Nó k
    - Xóa action và quan sát Soul được hoàn.
    - Execute toàn bộ plan.
    - Gây Daze và kiểm tra số Blue Soul nhận được.
+   - Chọn An, dùng `SPECIAL`, xác nhận không có Beat mới; kỹ năng tiếp theo nhận đúng Nhập Hồn và trạng thái không bị Attack thường tiêu mất.
+   - Với Nhập Hồn, kiểm tra Hộ Thân Phù = 700, Dẫn Hồn Thuật = 800, action cancel/Item không tiêu charge và không thể cast chồng khi đang `NẠP SẴN`.
+   - Chọn Mặc, dùng `SPECIAL`, xác nhận mục tiêu hai lần; kiểm tra trừ đúng 1 Soul, không có Beat mới, HP row hiện `[WEAKPOINT]` và state quay lại Player Turn.
+   - Hủy Toàn Thức hoặc chọn enemy đã có Weakpoint; xác nhận không mất Soul và không bắt đầu cooldown.
+   - Qua hai Player Phase tiếp theo và kiểm tra cooldown Special về 0 ở round thứ hai sau khi cast.
+   - Hạ Boss xuống tối đa 20% HP; kiểm tra `???` mở thành `BẢN NGÃ TÁI SINH`, Soul được nạp 3 Red + 6 Blue và activation tốn 0 Soul/0 Beat.
+   - Sau khi XIII đã `ACTIVE`, thử xác nhận lại bằng chuột và bàn phím. Keyboard dispatch lặp hiện là expected gap cần sửa, không phải acceptance pass.
+   - Kiểm tra riêng trường hợp một hit đưa Boss từ trên 20% xuống 0; hiện chưa có HP gate nên đây là expected gap, không phải acceptance pass.
    - Hoàn thành Victory/Defeat và Replay.
 5. Không dùng các menu `Test...` trong `Tools` như bằng chứng automated test.
 
@@ -153,7 +165,7 @@ Trước khi mở rộng Narrative hoặc thêm content, cần hoàn thành theo
 
 1. Viết automated tests cho damage pipeline và các nhánh target chết/action cancel.
 2. Data hóa character/skill/item bằng stable IDs.
-3. Triển khai Instant Specials.
+3. Hoàn tất nghiệm thu PlayMode cho Instant Specials và presentation của Nhập Hồn/Toàn Thức; phần Phase 3, HP gate và finisher/cut-in của XIII đi cùng gate Boss ở mục 4.
 4. Triển khai boss multi-entity/phase contract.
 5. Chạy full PlayMode smoke test và UI responsive test cho layout 3 hàng Character × 2 Beat.
 

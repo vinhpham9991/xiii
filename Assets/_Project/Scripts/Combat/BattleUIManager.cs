@@ -13,13 +13,18 @@ public class BattleUIManager : MonoBehaviour
     private GameObject keyMapPanel;
     private Text infoText;
     private Transform activeActorTransform;
+    private Camera uiCamera;
     
     private void Update()
     {
         if (actionMenu != null && actionMenu.activeSelf && activeActorTransform != null)
         {
-            Vector3 screenPos = Camera.main.WorldToScreenPoint(activeActorTransform.position + Vector3.right * 1f + Vector3.up * 0.5f);
-            actionMenu.GetComponent<RectTransform>().position = screenPos;
+            if (uiCamera != null)
+            {
+                Vector3 screenPos = uiCamera.WorldToScreenPoint(
+                    activeActorTransform.position + Vector3.right * 1f + Vector3.up * 0.5f);
+                actionMenu.GetComponent<RectTransform>().position = screenPos;
+            }
         }
 
         // F1 Toggle Key Map Panel
@@ -47,6 +52,7 @@ public class BattleUIManager : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        uiCamera = Camera.main;
     }
 
     // Phải gọi sau khi BattleManager đã gom đủ Allies
@@ -78,7 +84,13 @@ public class BattleUIManager : MonoBehaviour
             ActionType t = currentMenuOptions[i];
             if (actionButtons.ContainsKey(t))
             {
-                if (i == activeMenuIndex)
+                Button button = actionButtons[t].GetComponent<Button>();
+                bool isInteractable = button == null || button.interactable;
+                if (!isInteractable)
+                {
+                    actionButtons[t].color = new Color(0.12f, 0.12f, 0.14f, 1f);
+                }
+                else if (i == activeMenuIndex)
                 {
                     // Highlight color (Bright Gold)
                     actionButtons[t].color = new Color(0.9f, 0.7f, 0.1f, 1f);
@@ -139,6 +151,25 @@ public class BattleUIManager : MonoBehaviour
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         canvasObj.AddComponent<GraphicRaycaster>();
+
+        GameObject infoObject = new GameObject("BattleMessage");
+        infoObject.transform.SetParent(canvasObj.transform, false);
+        infoText = infoObject.AddComponent<Text>();
+        infoText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        infoText.alignment = TextAnchor.MiddleCenter;
+        infoText.fontSize = 24;
+        infoText.fontStyle = FontStyle.Bold;
+        infoText.color = Color.white;
+        infoText.raycastTarget = false;
+        Outline infoOutline = infoObject.AddComponent<Outline>();
+        infoOutline.effectColor = Color.black;
+        infoOutline.effectDistance = new Vector2(2f, -2f);
+        RectTransform infoRect = infoObject.GetComponent<RectTransform>();
+        infoRect.anchorMin = new Vector2(0.5f, 1f);
+        infoRect.anchorMax = new Vector2(0.5f, 1f);
+        infoRect.pivot = new Vector2(0.5f, 1f);
+        infoRect.anchoredPosition = new Vector2(0f, -110f);
+        infoRect.sizeDelta = new Vector2(900f, 90f);
 
         // --- ALLIES HUD (Bottom Center, HP bars) ---
         alliesHud = new GameObject("AlliesHUD");
@@ -393,7 +424,7 @@ public class BattleUIManager : MonoBehaviour
         menuRect.anchorMax = new Vector2(0, 0);
         menuRect.pivot = new Vector2(0, 0.5f); // Pivot bên trái ở giữa
         menuRect.anchoredPosition = new Vector2(-1000, -1000); // Mặc định giấu đi
-        menuRect.sizeDelta = new Vector2(120, 150); // Thu nhỏ Action Menu
+        menuRect.sizeDelta = new Vector2(180, 190);
 
         VerticalLayoutGroup menuLayout = actionMenu.AddComponent<VerticalLayoutGroup>();
         menuLayout.padding = new RectOffset(10, 10, 10, 10);
@@ -405,6 +436,7 @@ public class BattleUIManager : MonoBehaviour
         CreateButton("ATTACK", ActionType.ATTACK, actionMenu.transform);
         CreateButton("SKILL", ActionType.SKILL, actionMenu.transform);
         CreateButton("ITEM", ActionType.ITEM, actionMenu.transform);
+        CreateButton("SPECIAL", ActionType.SPECIAL, actionMenu.transform);
 
         actionMenu.SetActive(false);
 
@@ -1118,7 +1150,14 @@ public class BattleUIManager : MonoBehaviour
 
     private void OnActionButtonClicked(ActionType type)
     {
-        if (type == ActionType.SKILL)
+        if (type == ActionType.SPECIAL)
+        {
+            if (BattleManager.Instance != null)
+            {
+                BattleManager.Instance.OnSpecialSelected();
+            }
+        }
+        else if (type == ActionType.SKILL)
         {
             ShowSkillMenu(true);
             ShowItemMenu(false);
@@ -1184,6 +1223,37 @@ public class BattleUIManager : MonoBehaviour
                 }
             }
         }
+
+        if (BattleManager.Instance != null && BattleManager.Instance.currentActor != null)
+        {
+            RefreshSpecialButton(BattleManager.Instance.currentActor);
+        }
+    }
+
+    public void RefreshSpecialButton(CharacterInteraction actor)
+    {
+        if (actor == null ||
+            BattleManager.Instance == null ||
+            !actionButtons.TryGetValue(ActionType.SPECIAL, out Image specialImage))
+        {
+            return;
+        }
+
+        BattleManager.Instance.GetSpecialPresentation(actor, out string label, out bool isAvailable);
+        Button specialButton = specialImage.GetComponent<Button>();
+        if (specialButton != null)
+        {
+            specialButton.interactable = isAvailable;
+        }
+
+        Text specialText = specialImage.GetComponentInChildren<Text>();
+        if (specialText != null)
+        {
+            specialText.text = label;
+            specialText.fontSize = 12;
+        }
+
+        HighlightActiveMenuOption();
     }
 
     public void ShowSkillMenu(bool show)
@@ -1438,8 +1508,19 @@ public class BattleUIManager : MonoBehaviour
             if (show && actorTransform != null)
             {
                 activeActorTransform = actorTransform;
-                Vector3 screenPos = Camera.main.WorldToScreenPoint(activeActorTransform.position + Vector3.right * 1f + Vector3.up * 0.5f);
-                actionMenu.GetComponent<RectTransform>().position = screenPos;
+                if (uiCamera == null)
+                {
+                    uiCamera = Camera.main;
+                }
+                if (uiCamera != null)
+                {
+                    Vector3 screenPos = uiCamera.WorldToScreenPoint(
+                        activeActorTransform.position + Vector3.right * 1f + Vector3.up * 0.5f);
+                    actionMenu.GetComponent<RectTransform>().position = screenPos;
+                }
+
+                CharacterInteraction actor = actorTransform.GetComponent<CharacterInteraction>();
+                RefreshSpecialButton(actor);
 
                 // Auto-select ATTACK
                 // Reset navigation
@@ -1495,7 +1576,9 @@ public class BattleUIManager : MonoBehaviour
             
             if (enemyHpTextsMap.ContainsKey(displayLabel) && enemyHpTextsMap[displayLabel] != null)
             {
-                enemyHpTextsMap[displayLabel].text = "HP: " + character.currentHP + "/" + character.maxHP;
+                string weakpointLabel = character.hasWeakpoint ? "  [WEAKPOINT]" : string.Empty;
+                enemyHpTextsMap[displayLabel].text =
+                    "HP: " + character.currentHP + "/" + character.maxHP + weakpointLabel;
             }
             if (enemyHpFillsMap.ContainsKey(displayLabel) && enemyHpFillsMap[displayLabel] != null)
             {

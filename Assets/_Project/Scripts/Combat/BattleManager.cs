@@ -4,7 +4,7 @@ using FrankenXIII.Combat.Domain;
 using UnityEngine;
 
 public enum BattleState { START, PLAYER_TURN, WAIT_TARGET, ENEMY_TURN, WON, LOST }
-public enum ActionType { ATTACK, SKILL, ITEM }
+public enum ActionType { ATTACK, SKILL, ITEM, SPECIAL }
 
 public class BattleManager : MonoBehaviour
 {
@@ -32,6 +32,21 @@ public class BattleManager : MonoBehaviour
 
     // Planning Phase
     private bool isExecuting = false;
+
+    // Funding Demo instant Specials. These never enter playerPlan or consume a Beat.
+    private readonly Dictionary<CharacterInteraction, int> specialCooldowns =
+        new Dictionary<CharacterInteraction, int>();
+    private readonly HashSet<CharacterInteraction> spiritPossessionCharges =
+        new HashSet<CharacterInteraction>();
+    private DemoSpecialCommand pendingSpecialCommand = DemoSpecialCommand.None;
+    private CharacterInteraction pendingSpecialActor;
+    private int playerRoundNumber;
+    private bool egoRebornUnlocked;
+    private bool egoRebornActivated;
+
+    public bool IsSelectingSpecialTarget =>
+        state == BattleState.WAIT_TARGET &&
+        pendingSpecialCommand == DemoSpecialCommand.Omniscience;
 
     private void Awake()
     {
@@ -130,6 +145,12 @@ public class BattleManager : MonoBehaviour
 
     void StartPlayerTurn()
     {
+        if (playerRoundNumber > 0)
+        {
+            AdvanceSpecialCooldowns();
+        }
+        playerRoundNumber++;
+
         currentRedSoul = MAX_RED_SOUL;
         if (BattleUIManager.Instance != null) BattleUIManager.Instance.UpdateSoulUI();
         
@@ -187,6 +208,8 @@ public class BattleManager : MonoBehaviour
         currentHighlight = null;
         currentActor = null;
         currentTarget = null;
+        pendingSpecialActor = null;
+        pendingSpecialCommand = DemoSpecialCommand.None;
         
         if (state == BattleState.WAIT_TARGET)
         {
@@ -317,7 +340,9 @@ public class BattleManager : MonoBehaviour
         else if (state == BattleState.WAIT_TARGET)
         {
             // Xác định danh sách mục tiêu hợp lệ
-            bool isSupportAction = (pendingAction == ActionType.ITEM) || (pendingAction == ActionType.SKILL && pendingSkill != null && pendingSkill.category == SkillCategory.SUPPORT);
+            bool isSupportAction = !IsSelectingSpecialTarget &&
+                ((pendingAction == ActionType.ITEM) ||
+                 (pendingAction == ActionType.SKILL && pendingSkill != null && pendingSkill.category == SkillCategory.SUPPORT));
             List<CharacterInteraction> validTargets = isSupportAction ? allies : enemies;
 
             if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.Q))
@@ -649,6 +674,8 @@ public class BattleManager : MonoBehaviour
         if (state != BattleState.WAIT_TARGET) return;
         
         state = BattleState.PLAYER_TURN;
+        pendingSpecialActor = null;
+        pendingSpecialCommand = DemoSpecialCommand.None;
         if (currentHighlight != null)
         {
             currentHighlight.Deselect(false);
@@ -666,9 +693,267 @@ public class BattleManager : MonoBehaviour
         }
     }
 
+    private DemoSpecialCommand GetSpecialCommand(CharacterInteraction actor)
+    {
+        if (actor == null || string.IsNullOrEmpty(actor.characterName))
+        {
+            return DemoSpecialCommand.None;
+        }
+
+        string normalizedName = actor.characterName.ToLowerInvariant();
+        if (normalizedName.Contains("an"))
+        {
+            return DemoSpecialCommand.SpiritPossession;
+        }
+
+        if (normalizedName.Contains("mac") || normalizedName.Contains("mặc"))
+        {
+            return DemoSpecialCommand.Omniscience;
+        }
+
+        if (normalizedName.Contains("xiii"))
+        {
+            return DemoSpecialCommand.EgoReborn;
+        }
+
+        return DemoSpecialCommand.None;
+    }
+
+    private int GetSpecialCooldown(CharacterInteraction actor)
+    {
+        return actor != null && specialCooldowns.TryGetValue(actor, out int cooldown)
+            ? cooldown
+            : 0;
+    }
+
+    private void AdvanceSpecialCooldowns()
+    {
+        List<CharacterInteraction> actors = new List<CharacterInteraction>(specialCooldowns.Keys);
+        foreach (CharacterInteraction actor in actors)
+        {
+            specialCooldowns[actor] = SpecialCommandRules.AdvanceCooldown(specialCooldowns[actor]);
+        }
+    }
+
+    private CharacterInteraction FindLivingBoss()
+    {
+        return enemies.Find(enemy =>
+            enemy != null &&
+            !enemy.isDead &&
+            !string.IsNullOrEmpty(enemy.characterName) &&
+            enemy.characterName.ToLowerInvariant().Contains("boss"));
+    }
+
+    public void GetSpecialPresentation(
+        CharacterInteraction actor,
+        out string label,
+        out bool isAvailable)
+    {
+        DemoSpecialCommand command = GetSpecialCommand(actor);
+        int cooldown = GetSpecialCooldown(actor);
+        bool hasSoul = currentRedSoul + currentBlueSoul >=
+            (command == DemoSpecialCommand.None ? 0 : SpecialCommandRules.GetSoulCost(command));
+
+        switch (command)
+        {
+            case DemoSpecialCommand.SpiritPossession:
+                label = spiritPossessionCharges.Contains(actor)
+                    ? "SPECIAL\nNHẬP HỒN: NẠP SẴN"
+                    : cooldown > 0
+                        ? "SPECIAL\nNHẬP HỒN: CD " + cooldown
+                        : "SPECIAL\nNHẬP HỒN (1 SOUL)";
+                isAvailable = cooldown == 0 && hasSoul && !spiritPossessionCharges.Contains(actor);
+                return;
+            case DemoSpecialCommand.Omniscience:
+                label = cooldown > 0
+                    ? "SPECIAL\nTOÀN THỨC: CD " + cooldown
+                    : "SPECIAL\nTOÀN THỨC (1 SOUL)";
+                isAvailable = cooldown == 0 && hasSoul;
+                return;
+            case DemoSpecialCommand.EgoReborn:
+                if (egoRebornActivated)
+                {
+                    label = "SPECIAL\nBẢN NGÃ: ACTIVE";
+                    isAvailable = false;
+                }
+                else if (egoRebornUnlocked)
+                {
+                    label = "SPECIAL\nBẢN NGÃ TÁI SINH";
+                    isAvailable = true;
+                }
+                else
+                {
+                    label = "SPECIAL\n??? (LOCKED)";
+                    isAvailable = false;
+                }
+                return;
+            default:
+                label = "SPECIAL\nUNAVAILABLE";
+                isAvailable = false;
+                return;
+        }
+    }
+
+    public void OnSpecialSelected()
+    {
+        if (state != BattleState.PLAYER_TURN || currentActor == null || isExecuting)
+        {
+            return;
+        }
+
+        DemoSpecialCommand command = GetSpecialCommand(currentActor);
+        int cooldown = GetSpecialCooldown(currentActor);
+        if (cooldown > 0)
+        {
+            BattleUIManager.Instance.ShowMessage("Special còn hồi " + cooldown + " round.");
+            return;
+        }
+
+        if (command == DemoSpecialCommand.SpiritPossession)
+        {
+            if (spiritPossessionCharges.Contains(currentActor))
+            {
+                BattleUIManager.Instance.ShowMessage("Nhập Hồn đang chờ kỹ năng kế tiếp của An.");
+                return;
+            }
+
+            if (!ConsumeSouls(SpecialCommandRules.GetSoulCost(command)))
+            {
+                BattleUIManager.Instance.ShowMessage("Không đủ Hồn Năng!");
+                return;
+            }
+
+            spiritPossessionCharges.Add(currentActor);
+            specialCooldowns[currentActor] = SpecialCommandRules.StartCooldown(command);
+            BattleUIManager.Instance.RefreshSpecialButton(currentActor);
+            BattleUIManager.Instance.ShowMessage("An kích hoạt NHẬP HỒN: kỹ năng kế tiếp được cường hóa.");
+            return;
+        }
+
+        if (command == DemoSpecialCommand.Omniscience)
+        {
+            if (currentRedSoul + currentBlueSoul < SpecialCommandRules.GetSoulCost(command))
+            {
+                BattleUIManager.Instance.ShowMessage("Không đủ Hồn Năng!");
+                return;
+            }
+
+            CharacterInteraction nearest = GetNearestEnemy(currentActor);
+            if (nearest == null)
+            {
+                BattleUIManager.Instance.ShowMessage("Không còn mục tiêu hợp lệ cho Toàn Thức.");
+                return;
+            }
+
+            pendingSpecialActor = currentActor;
+            pendingSpecialCommand = command;
+            state = BattleState.WAIT_TARGET;
+            currentTarget = null;
+            BattleUIManager.Instance.ShowActionMenu(false);
+            RotateCameraTo(leftCamRot);
+            SetHighlight(nearest);
+            OnTargetSelected(nearest);
+            return;
+        }
+
+        if (command == DemoSpecialCommand.EgoReborn)
+        {
+            if (!egoRebornUnlocked)
+            {
+                CharacterInteraction boss = FindLivingBoss();
+                string requirement = boss == null
+                    ? "Bản Ngã Tái Sinh chỉ mở trong trận Boss."
+                    : "Bản Ngã Tái Sinh mở khi Boss còn tối đa 20% HP.";
+                BattleUIManager.Instance.ShowMessage(requirement);
+                return;
+            }
+
+            egoRebornActivated = true;
+            BattleUIManager.Instance.RefreshSpecialButton(currentActor);
+            BattleUIManager.Instance.ShowMessage("XIII thức tỉnh BẢN NGÃ TÁI SINH!");
+        }
+    }
+
+    private void HandleOmniscienceTargetSelection(CharacterInteraction target)
+    {
+        if (target == null || target.isAlly || target.isDead)
+        {
+            return;
+        }
+
+        if (currentTarget != target)
+        {
+            currentTarget = target;
+            SetHighlight(target);
+            target.SelectCharacter();
+            BattleUIManager.Instance.ShowMessage(
+                "Toàn Thức: " + target.characterName +
+                ". [Space] lần nữa để xác nhận | [Backspace / Right Click] để hủy");
+            return;
+        }
+
+        if (target.hasWeakpoint)
+        {
+            BattleUIManager.Instance.ShowMessage(target.characterName + " đã có Weakpoint.");
+            return;
+        }
+
+        if (pendingSpecialActor == null ||
+            !ConsumeSouls(SpecialCommandRules.GetSoulCost(DemoSpecialCommand.Omniscience)))
+        {
+            BattleUIManager.Instance.ShowMessage("Không đủ Hồn Năng!");
+            return;
+        }
+
+        CharacterInteraction caster = pendingSpecialActor;
+        target.hasWeakpoint = true;
+        specialCooldowns[caster] =
+            SpecialCommandRules.StartCooldown(DemoSpecialCommand.Omniscience);
+
+        pendingSpecialActor = null;
+        pendingSpecialCommand = DemoSpecialCommand.None;
+        DeselectAll(false);
+        BattleUIManager.Instance.UpdateHP(target);
+        BattleUIManager.Instance.ShowMessage(
+            "Mặc dùng TOÀN THỨC: " + target.characterName + " lộ Weakpoint!");
+    }
+
+    private bool TryConsumeSpiritPossession(CharacterInteraction actor)
+    {
+        return actor != null && spiritPossessionCharges.Remove(actor);
+    }
+
+    private void TryUnlockEgoReborn(CharacterInteraction target)
+    {
+        if (egoRebornUnlocked || target == null || target.isDead || target.currentHP <= 0)
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(target.characterName) ||
+            !target.characterName.ToLowerInvariant().Contains("boss") ||
+            !SpecialCommandRules.IsEgoRebornUnlocked(target.currentHP, target.maxHP))
+        {
+            return;
+        }
+
+        egoRebornUnlocked = true;
+        currentRedSoul = MAX_RED_SOUL;
+        currentBlueSoul = MAX_BLUE_SOUL;
+        BattleUIManager.Instance.UpdateSoulUI();
+        BattleUIManager.Instance.ShowMessage(
+            "BẢN NGÃ TÁI SINH đã mở khóa! Hồn Năng được nạp đầy.");
+    }
+
     public void OnActionSelected(ActionType action)
     {
         if (state != BattleState.PLAYER_TURN) return;
+
+        if (action == ActionType.SPECIAL)
+        {
+            OnSpecialSelected();
+            return;
+        }
 
         lastActionFrame = Time.frameCount;
         
@@ -726,6 +1011,12 @@ public class BattleManager : MonoBehaviour
         }
         else if (state == BattleState.WAIT_TARGET)
         {
+            if (IsSelectingSpecialTarget)
+            {
+                HandleOmniscienceTargetSelection(target);
+                return;
+            }
+
             bool isSupportAction = (pendingAction == ActionType.ITEM) || (pendingAction == ActionType.SKILL && pendingSkill != null && pendingSkill.category == SkillCategory.SUPPORT);
 
             // Nếu click đồng minh mà lệnh không phải Hỗ trợ -> Cancel lệnh
@@ -1008,7 +1299,13 @@ public class BattleManager : MonoBehaviour
     public GameObject slashVFXPrefab;
     public GameObject hitVFXPrefab;
 
-    private int CalculateDamage(CharacterInteraction actor, CharacterInteraction target, SkillData skill, out int limitDamage, out bool isCrit)
+    private int CalculateDamage(
+        CharacterInteraction actor,
+        CharacterInteraction target,
+        SkillData skill,
+        out int limitDamage,
+        out bool isCrit,
+        float empowerMultiplier = 1f)
     {
         isCrit = false;
         limitDamage = 0;
@@ -1018,7 +1315,6 @@ public class BattleManager : MonoBehaviour
 
         // TẦNG 2: SÁT THƯƠNG ĐẦU RA CƠ BẢN (DMG_base)
         float skillMultiplier = (skill != null) ? skill.powerMultiplier : 1.0f;
-        float empowerMultiplier = 1.0f; // TODO: "Nhập Hồn" of An
         float dmgBase = atkEff * skillMultiplier * empowerMultiplier;
 
         // TẦNG 3: KHẤU TRỪ PHÒNG NGỰ CÓ BÀO MÒN (MITIGATED DMG)
@@ -1159,6 +1455,13 @@ public class BattleManager : MonoBehaviour
         bool isCrit = false;
         bool targetWasDazed = target.isDazed;
         bool hitWeakpoint = target.hasWeakpoint;
+        bool isSpiritPossessionEmpowered =
+            actionType == ActionType.SKILL &&
+            skill != null &&
+            TryConsumeSpiritPossession(actor);
+        float empowerMultiplier = isSpiritPossessionEmpowered
+            ? SpecialCommandRules.SpiritPossessionOutputMultiplier
+            : 1f;
 
         // --- 7-LAYER DAMAGE PIPELINE ---
         if (actionType == ActionType.ATTACK)
@@ -1169,7 +1472,13 @@ public class BattleManager : MonoBehaviour
         {
             if (skill.category == SkillCategory.ATTACK || skill.category == SkillCategory.DEBUFF)
             {
-                damage = CalculateDamage(actor, target, skill, out limitDamage, out isCrit);
+                damage = CalculateDamage(
+                    actor,
+                    target,
+                    skill,
+                    out limitDamage,
+                    out isCrit,
+                    empowerMultiplier);
                 // Check weakpoint logic internally implemented in CalculateDamage, but let's just use target.hasWeakpoint here
             }
             else if (skill.category == SkillCategory.SUPPORT)
@@ -1216,6 +1525,7 @@ public class BattleManager : MonoBehaviour
         dmgText.Setup(damage, isCrit, false, Color.white); 
         
         target.currentHP -= damage;
+        TryUnlockEgoReborn(target);
 
         bool enteredDaze = false;
 
@@ -1347,21 +1657,28 @@ public class BattleManager : MonoBehaviour
         // 3. Thi triển hiệu ứng
         if (skill != null)
         {
+            bool isSpiritPossessionEmpowered = TryConsumeSpiritPossession(actor);
             if (skill.shieldAmount > 0)
             {
-                target.currentShield += skill.shieldAmount;
-                BattleUIManager.Instance.ShowMessage(target.characterName + " nhận được " + skill.shieldAmount + " Hộ Giáp!");
+                int shieldAmount = isSpiritPossessionEmpowered
+                    ? SpecialCommandRules.ApplySpiritPossession(skill.shieldAmount)
+                    : skill.shieldAmount;
+                target.currentShield += shieldAmount;
+                BattleUIManager.Instance.ShowMessage(target.characterName + " nhận được " + shieldAmount + " Hộ Giáp!");
             }
             if (skill.healAmount > 0)
             {
-                target.currentHP = Mathf.Min(target.maxHP, target.currentHP + skill.healAmount);
-                BattleUIManager.Instance.ShowMessage(target.characterName + " hồi " + skill.healAmount + " Sinh lực!");
+                int healAmount = isSpiritPossessionEmpowered
+                    ? SpecialCommandRules.GetSpiritPossessionHealing(skill.healAmount)
+                    : skill.healAmount;
+                target.currentHP = Mathf.Min(target.maxHP, target.currentHP + healAmount);
+                BattleUIManager.Instance.ShowMessage(target.characterName + " hồi " + healAmount + " Sinh lực!");
                 
                 // Spawn Floating Text (Màu Xanh lá cho Hồi máu)
                 GameObject dmgTextObj = new GameObject("HealText");
                 dmgTextObj.transform.position = target.transform.position + new Vector3(0, 1.5f, -0.5f);
                 DamageText dmgText = dmgTextObj.AddComponent<DamageText>();
-                dmgText.Setup(skill.healAmount, false, false, Color.green); 
+                dmgText.Setup(healAmount, false, false, Color.green);
             }
             if (skill.atkBuff > 0)
             {
@@ -1855,6 +2172,8 @@ public class BattleManager : MonoBehaviour
         {
             // Hủy trạng thái chờ chọn mục tiêu, cho phép chọn lại lệnh
             state = BattleState.PLAYER_TURN;
+            pendingSpecialActor = null;
+            pendingSpecialCommand = DemoSpecialCommand.None;
         }
 
         // Reset camera về trạng thái mặc định khi hủy chọn hoàn toàn

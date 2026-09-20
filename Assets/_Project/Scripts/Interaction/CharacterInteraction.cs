@@ -383,6 +383,11 @@ public class CharacterInteraction : MonoBehaviour
         }
         else if (BattleManager.Instance.state == BattleState.WAIT_TARGET)
         {
+            if (BattleManager.Instance.IsSelectingSpecialTarget)
+            {
+                return !isAlly;
+            }
+
             bool isSupport = (BattleManager.Instance.pendingAction == ActionType.SKILL && 
                               BattleManager.Instance.pendingSkill != null && 
                               BattleManager.Instance.pendingSkill.category == SkillCategory.SUPPORT);
