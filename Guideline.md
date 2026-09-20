@@ -81,9 +81,9 @@ Hệ thống ưu tiên sử dụng Bàn phím để mang lại tốc độ thao 
   - Xác nhận mục tiêu thi triển kỹ năng.
 - **Enter**:
   - Khi đang rảnh tay (không mở menu), bấm Enter để chốt sổ (Execute) và bắt đầu xả skill.
-- **Backspace**:
-  - Lùi lại (Back) khỏi Sub-Menu.
-  - Khi đang chọn Mục tiêu, nhấn Backspace để huỷ việc chọn và quay lại Menu nhân vật.
+- **Backspace / Chuột phải (Right Click)**:
+  - Lùi lại (Back) khỏi Sub-Menu (Skill, Item).
+  - Khi đang chọn Mục tiêu, nhấn Backspace hoặc Chuột phải để huỷ việc chọn và quay lại Menu nhân vật.
 - **Delete**:
   - Hủy hành động (Remove Action): Xóa hành động mới nhất của nhân vật đang được Highlight/Chọn. Tiền (Soul) và Nộ (Limit) đã cọc sẽ được hoàn trả lập tức.
 - **F1**: Mở bảng hướng dẫn nút (Key Map).
@@ -91,8 +91,8 @@ Hệ thống ưu tiên sử dụng Bàn phím để mang lại tốc độ thao 
 ### Chuột (Mouse)
 - Có thể rê chuột để Highlight (phát sáng) mục tiêu.
 - Click chuột trái để chọn trực tiếp nhân vật hoặc kẻ địch.
+- Click chuột phải (Right Click) có chức năng tương đương Backspace (Lùi lại/Hủy).
 - Hỗ trợ click vào các Nút trên UI (Mặc dù game thiết kế tối ưu cho bàn phím).
-
 ---
 
 ## 5. Giới Hạn Xác Minh

@@ -27,31 +27,7 @@ public class BattleUIManager : MonoBehaviour
         {
             if (keyMapPanel != null)
                 keyMapPanel.SetActive(!keyMapPanel.activeSelf);
-        }
-
-        // Xử lý phím Backspace để đóng menu Skill/Item
-        if (Input.GetKeyDown(KeyCode.Backspace))
-        {
-            if (skillMenu != null && skillMenu.activeSelf)
-            {
-                ShowSkillMenu(false);
-                if (actionButtons.ContainsKey(ActionType.ATTACK)) EventSystem.current.SetSelectedGameObject(actionButtons[ActionType.ATTACK].gameObject);
-            }
-            else if (itemMenu != null && itemMenu.activeSelf)
-            {
-                ShowItemMenu(false);
-                if (actionButtons.ContainsKey(ActionType.ATTACK)) EventSystem.current.SetSelectedGameObject(actionButtons[ActionType.ATTACK].gameObject);
-            }
-            else if (actionMenu != null && actionMenu.activeSelf)
-            {
-                // Nếu đang ở action menu mà ấn back, thì báo cho BattleManager huỷ chọn nhân vật
-                if (BattleManager.Instance != null && BattleManager.Instance.state == BattleState.PLAYER_TURN)
-                {
-                    BattleManager.Instance.CancelActorSelection();
-                }
-            }
-        }
-    }
+        }    }
     
     // HUD
     private GameObject alliesHud;
@@ -552,7 +528,7 @@ public class BattleUIManager : MonoBehaviour
         contentText.text = 
             "WASD / Arrow \t Navigate\n" +
             "Space \t\t Confirm\n" +
-            "Backspace \t Back / Cancel\n" +
+            "Backspace / RMB \t Back / Cancel\n" +
             "Q / E \t\t Previous / Next Character\n" +
             "PageUp / PageDown \t Secondary Character Switch\n" +
             "Enter \t\t Execute\n" +
@@ -1023,7 +999,9 @@ public class BattleUIManager : MonoBehaviour
             GameObject infoCol = new GameObject("InfoCol");
             infoCol.transform.SetParent(rowObj.transform, false);
             LayoutElement infoLe = infoCol.AddComponent<LayoutElement>();
-            infoLe.minWidth = 60;
+            infoLe.minWidth = 140;
+            infoLe.preferredWidth = 140;
+            infoLe.flexibleWidth = 0; // Fix width completely
             VerticalLayoutGroup infoVLayout = infoCol.AddComponent<VerticalLayoutGroup>();
             infoVLayout.spacing = 1;
             infoVLayout.childControlHeight = true;
@@ -1230,8 +1208,10 @@ public class BattleUIManager : MonoBehaviour
             if (show && activeActorTransform != null)
             {
                 // Clear old skills
-                foreach (Transform child in skillMenu.transform)
+                for (int i = skillMenu.transform.childCount - 1; i >= 0; i--)
                 {
+                    Transform child = skillMenu.transform.GetChild(i);
+                    child.SetParent(null);
                     Destroy(child.gameObject);
                 }
 
@@ -1245,7 +1225,6 @@ public class BattleUIManager : MonoBehaviour
                 }
                 
                 // Nút Cancel để quay lại Action Menu
-                CreateSkillCancelButton(skillMenu.transform);
 
                 // Lấy vị trí của ActionMenu hiện tại và cộng thêm bề ngang (ví dụ 130px) để nó xổ ngang
                 RectTransform actionRect = actionMenu.GetComponent<RectTransform>();
@@ -1254,7 +1233,7 @@ public class BattleUIManager : MonoBehaviour
                 // Auto-select first skill
                 if (skillMenu.transform.childCount > 0)
                 {
-                    EventSystem.current.SetSelectedGameObject(skillMenu.transform.GetChild(0).gameObject);
+                    StartCoroutine(SelectLater(skillMenu.transform.GetChild(0).gameObject));
                 }
             }
         }
@@ -1271,16 +1250,23 @@ public class BattleUIManager : MonoBehaviour
         if (BattleManager.Instance != null) currentSouls = BattleManager.Instance.currentRedSoul + BattleManager.Instance.currentBlueSoul;
         bool hasEnoughSoul = currentSouls >= skill.soulCost;
 
+        btnImg.color = Color.white;
+        ColorBlock cb = btn.colors;
         if (hasEnoughSoul)
         {
-            btnImg.color = new Color(0.3f, 0.2f, 0.4f, 1f);
+            cb.normalColor = new Color(0.3f, 0.2f, 0.4f, 1f);
+            cb.highlightedColor = new Color(0.6f, 0.4f, 0.8f, 1f);
+            cb.selectedColor = new Color(0.6f, 0.4f, 0.8f, 1f);
+            cb.pressedColor = new Color(0.8f, 0.6f, 1f, 1f);
             btn.onClick.AddListener(() => OnSkillSelected(skill));
         }
         else
         {
-            btnImg.color = new Color(0.2f, 0.2f, 0.2f, 1f); // Xám
+            cb.normalColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+            cb.disabledColor = new Color(0.2f, 0.2f, 0.2f, 1f);
             btn.interactable = false;
         }
+        btn.colors = cb;
 
         GameObject txtObj = new GameObject("Text");
         txtObj.transform.SetParent(btnObj.transform, false);
@@ -1290,32 +1276,6 @@ public class BattleUIManager : MonoBehaviour
         txt.alignment = TextAnchor.MiddleCenter;
         txt.fontSize = 16;
         txt.color = Color.white;
-
-        RectTransform txtRect = txtObj.GetComponent<RectTransform>();
-        txtRect.anchorMin = Vector2.zero; txtRect.anchorMax = Vector2.one;
-        txtRect.offsetMin = Vector2.zero; txtRect.offsetMax = Vector2.zero;
-    }
-
-    private void CreateSkillCancelButton(Transform parent)
-    {
-        GameObject btnObj = new GameObject("Btn_Cancel");
-        btnObj.transform.SetParent(parent, false);
-        Image btnImg = btnObj.AddComponent<Image>();
-        btnImg.color = new Color(0.2f, 0.2f, 0.2f, 1f);
-        Button btn = btnObj.AddComponent<Button>();
-        btn.onClick.AddListener(() => {
-            ShowSkillMenu(false);
-            // ShowActionMenu(true, activeActorTransform); // Không cần hiện lại vì nó vốn không bị ẩn
-        });
-
-        GameObject txtObj = new GameObject("Text");
-        txtObj.transform.SetParent(btnObj.transform, false);
-        Text txt = txtObj.AddComponent<Text>();
-        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        txt.text = "BACK";
-        txt.alignment = TextAnchor.MiddleCenter;
-        txt.fontSize = 16;
-        txt.color = Color.red;
 
         RectTransform txtRect = txtObj.GetComponent<RectTransform>();
         txtRect.anchorMin = Vector2.zero; txtRect.anchorMax = Vector2.one;
@@ -1341,8 +1301,10 @@ public class BattleUIManager : MonoBehaviour
             if (show)
             {
                 // Clear old items
-                foreach (Transform child in itemMenu.transform)
+                for (int i = itemMenu.transform.childCount - 1; i >= 0; i--)
                 {
+                    Transform child = itemMenu.transform.GetChild(i);
+                    child.SetParent(null);
                     Destroy(child.gameObject);
                 }
 
@@ -1354,7 +1316,6 @@ public class BattleUIManager : MonoBehaviour
                     }
                 }
                 
-                CreateItemCancelButton(itemMenu.transform);
 
                 RectTransform actionRect = actionMenu.GetComponent<RectTransform>();
                 itemMenu.GetComponent<RectTransform>().position = actionRect.position + new Vector3(130f, 0, 0);
@@ -1362,7 +1323,7 @@ public class BattleUIManager : MonoBehaviour
                 // Auto-select first item
                 if (itemMenu.transform.childCount > 0)
                 {
-                    EventSystem.current.SetSelectedGameObject(itemMenu.transform.GetChild(0).gameObject);
+                    StartCoroutine(SelectLater(itemMenu.transform.GetChild(0).gameObject));
                 }
             }
         }
@@ -1375,16 +1336,23 @@ public class BattleUIManager : MonoBehaviour
         Image btnImg = btnObj.AddComponent<Image>();
         Button btn = btnObj.AddComponent<Button>();
 
+        btnImg.color = Color.white;
+        ColorBlock cb = btn.colors;
         if (amount > 0)
         {
-            btnImg.color = new Color(0.2f, 0.5f, 0.3f, 1f);
+            cb.normalColor = new Color(0.2f, 0.5f, 0.3f, 1f);
+            cb.highlightedColor = new Color(0.4f, 0.8f, 0.5f, 1f);
+            cb.selectedColor = new Color(0.4f, 0.8f, 0.5f, 1f);
+            cb.pressedColor = new Color(0.6f, 1.0f, 0.7f, 1f);
             btn.onClick.AddListener(() => OnItemSelected(item));
         }
         else
         {
-            btnImg.color = new Color(0.2f, 0.2f, 0.2f, 1f);
+            cb.normalColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+            cb.disabledColor = new Color(0.2f, 0.2f, 0.2f, 1f);
             btn.interactable = false;
         }
+        btn.colors = cb;
 
         GameObject txtObj = new GameObject("Text");
         txtObj.transform.SetParent(btnObj.transform, false);
@@ -1400,32 +1368,36 @@ public class BattleUIManager : MonoBehaviour
         txtRect.offsetMin = Vector2.zero; txtRect.offsetMax = Vector2.zero;
     }
 
-    private void CreateItemCancelButton(Transform parent)
+    
+    
+    public bool TryGoBack()
     {
-        GameObject btnObj = new GameObject("Btn_Cancel");
-        btnObj.transform.SetParent(parent, false);
-        Image btnImg = btnObj.AddComponent<Image>();
-        btnImg.color = new Color(0.2f, 0.2f, 0.2f, 1f);
-        Button btn = btnObj.AddComponent<Button>();
-        btn.onClick.AddListener(() => {
+        if (skillMenu != null && skillMenu.activeSelf)
+        {
+            ShowSkillMenu(false);
+            if (actionButtons.ContainsKey(ActionType.ATTACK)) StartCoroutine(SelectLater(actionButtons[ActionType.ATTACK].gameObject));
+            return true;
+        }
+        else if (itemMenu != null && itemMenu.activeSelf)
+        {
             ShowItemMenu(false);
-        });
-
-        GameObject txtObj = new GameObject("Text");
-        txtObj.transform.SetParent(btnObj.transform, false);
-        Text txt = txtObj.AddComponent<Text>();
-        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        txt.text = "BACK";
-        txt.alignment = TextAnchor.MiddleCenter;
-        txt.fontSize = 16;
-        txt.color = Color.red;
-
-        RectTransform txtRect = txtObj.GetComponent<RectTransform>();
-        txtRect.anchorMin = Vector2.zero; txtRect.anchorMax = Vector2.one;
-        txtRect.offsetMin = Vector2.zero; txtRect.offsetMax = Vector2.zero;
+            if (actionButtons.ContainsKey(ActionType.ATTACK)) StartCoroutine(SelectLater(actionButtons[ActionType.ATTACK].gameObject));
+            return true;
+        }
+        return false;
     }
 
-    
+    public bool IsSubMenuOpen()
+    {
+        return (skillMenu != null && skillMenu.activeSelf) || (itemMenu != null && itemMenu.activeSelf);
+    }
+
+    private System.Collections.IEnumerator SelectLater(GameObject obj)
+    {
+        yield return null; // Wait 1 frame for layout to build
+        UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(obj);
+    }
+
     public bool IsActionMenuOpen()
     {
         return actionMenu != null && actionMenu.activeSelf && (skillMenu == null || !skillMenu.activeSelf) && (itemMenu == null || !itemMenu.activeSelf);

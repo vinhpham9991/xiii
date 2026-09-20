@@ -237,8 +237,15 @@ public class BattleManager : MonoBehaviour
 
         if (state == BattleState.PLAYER_TURN && currentActor != null && !isExecuting)
         {
+            if (Input.GetKeyDown(KeyCode.Backspace) || (UnityEngine.InputSystem.Mouse.current != null && UnityEngine.InputSystem.Mouse.current.rightButton.wasPressedThisFrame))
+            {
+                if (!BattleUIManager.Instance.TryGoBack())
+                {
+                    CancelActorSelection();
+                }
+            }
             // Action Menu is open
-            if (BattleUIManager.Instance.IsActionMenuOpen())
+            else if (BattleUIManager.Instance.IsActionMenuOpen())
             {
                 if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W))
                 {
@@ -251,10 +258,6 @@ public class BattleManager : MonoBehaviour
                 else if (Input.GetKeyDown(KeyCode.Space))
                 {
                     BattleUIManager.Instance.ConfirmMenuSelection();
-                }
-                else if (Input.GetKeyDown(KeyCode.Backspace))
-                {
-                    CancelActorSelection();
                 }
             }
 
@@ -332,7 +335,7 @@ public class BattleManager : MonoBehaviour
                     OnTargetSelected(currentHighlight);
                 }
             }
-            else if (Input.GetKeyDown(KeyCode.Backspace)) // Cancel is only Backspace (Esc is reserved)
+            else if (Input.GetKeyDown(KeyCode.Backspace) || (UnityEngine.InputSystem.Mouse.current != null && UnityEngine.InputSystem.Mouse.current.rightButton.wasPressedThisFrame)) // Cancel is only Backspace or Right Click (Esc is reserved)
             {
                 // Hủy lệnh quay lại chọn lệnh
                 CancelActorSelection();
@@ -772,11 +775,11 @@ public class BattleManager : MonoBehaviour
                 if (!target.isAlly)
                 {
                     BattleUIManager.Instance.ShowBossHUD(target);
-                    BattleUIManager.Instance.ShowMessage("Mục tiêu: " + target.characterName + ". [Space] lần nữa để xác nhận | [Backspace] để hủy");
+                    BattleUIManager.Instance.ShowMessage("Mục tiêu: " + target.characterName + ". [Space] lần nữa để xác nhận | [Backspace / Right Click] để hủy");
                 }
                 else
                 {
-                    BattleUIManager.Instance.ShowMessage("Mục tiêu hỗ trợ: " + target.characterName + ". [Space] lần nữa để xác nhận | [Backspace] để hủy");
+                    BattleUIManager.Instance.ShowMessage("Mục tiêu hỗ trợ: " + target.characterName + ". [Space] lần nữa để xác nhận | [Backspace / Right Click] để hủy");
                 }
             }
         }
