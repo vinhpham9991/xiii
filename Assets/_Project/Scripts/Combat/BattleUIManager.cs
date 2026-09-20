@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using FrankenXIII.Combat.Domain;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -611,8 +612,8 @@ public class BattleUIManager : MonoBehaviour
     private GameObject actionBarHud;
     private GameObject enemyActionBarHud;
     
-    // Lưu các node UI: actionNodes[actorName][beatIndex]
     private Dictionary<string, Image[]> actionNodesMap = new Dictionary<string, Image[]>();
+    private Dictionary<string, Outline[]> actionNodeOutlinesMap = new Dictionary<string, Outline[]>();
     private Dictionary<string, Image[]> enemyActionNodesMap = new Dictionary<string, Image[]>();
     
     private Dictionary<string, Text> allyHpTextsMap = new Dictionary<string, Text>();
@@ -657,6 +658,8 @@ public class BattleUIManager : MonoBehaviour
         allyHpFillsMap.Clear();
 
         allyRowBgsMap.Clear();
+        actionNodesMap.Clear();
+        actionNodeOutlinesMap.Clear();
         foreach (string actorName in actorNames)
         {
             GameObject rowObj = new GameObject("Row_" + actorName);
@@ -732,40 +735,52 @@ public class BattleUIManager : MonoBehaviour
             
             allyHpTextsMap[actorName] = labelTxt;
 
-            Image[] nodes = new Image[2];
-            for (int i = 0; i < 2; i++)
+            Image[] actorNodes = new Image[ActorBeatRules.DemoPlayerBeatCount];
+            Outline[] actorNodeOutlines = new Outline[ActorBeatRules.DemoPlayerBeatCount];
+            for (int beatIndex = 0; beatIndex < ActorBeatRules.DemoPlayerBeatCount; beatIndex++)
             {
-                GameObject nodeObj = new GameObject("Node_" + i);
+                GameObject nodeObj = new GameObject("Beat_" + (beatIndex + 1));
                 nodeObj.transform.SetParent(rowObj.transform, false);
-                LayoutElement nodeLe = nodeObj.AddComponent<LayoutElement>();
-                nodeLe.minWidth = 36;
-                nodeLe.minHeight = 32;
-                
-                Image bg = nodeObj.AddComponent<Image>();
-                bg.color = new Color(0.12f, 0.12f, 0.18f, 1f);
-                
+                LayoutElement nodeLayout = nodeObj.AddComponent<LayoutElement>();
+                nodeLayout.minWidth = 72;
+                nodeLayout.preferredWidth = 72;
+                nodeLayout.minHeight = 42;
+                nodeLayout.preferredHeight = 42;
+
+                Image nodeBackground = nodeObj.AddComponent<Image>();
+                nodeBackground.color = new Color(0.12f, 0.12f, 0.18f, 1f);
+                actorNodes[beatIndex] = nodeBackground;
+
+                Outline nodeOutline = nodeObj.AddComponent<Outline>();
+                nodeOutline.effectColor = new Color(0.1f, 1f, 0.85f, 1f);
+                nodeOutline.effectDistance = new Vector2(2f, -2f);
+                nodeOutline.enabled = false;
+                actorNodeOutlines[beatIndex] = nodeOutline;
+
                 GameObject textObj = new GameObject("Text");
                 textObj.transform.SetParent(nodeObj.transform, false);
                 Text actionText = textObj.AddComponent<Text>();
                 actionText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-                actionText.text = "";
-                actionText.fontSize = 12;
-                actionText.color = Color.white;
+                actionText.text = "Beat " + (beatIndex + 1);
+                actionText.fontSize = 10;
+                actionText.color = new Color(0.55f, 0.55f, 0.62f, 1f);
                 actionText.alignment = TextAnchor.MiddleCenter;
 
-                RectTransform textRect = actionText.GetComponent<RectTransform>();
-                textRect.anchorMin = Vector2.zero; textRect.anchorMax = Vector2.one;
-                textRect.offsetMin = Vector2.zero; textRect.offsetMax = Vector2.zero;
-                
-                nodes[i] = bg;
+                RectTransform textRect = textObj.GetComponent<RectTransform>();
+                textRect.anchorMin = Vector2.zero;
+                textRect.anchorMax = Vector2.one;
+                textRect.offsetMin = Vector2.zero;
+                textRect.offsetMax = Vector2.zero;
             }
-            actionNodesMap[actorName] = nodes;
+
+            actionNodesMap[actorName] = actorNodes;
+            actionNodeOutlinesMap[actorName] = actorNodeOutlines;
         }
 
         RectTransform mainRect = rightHudWrapper.GetComponent<RectTransform>();
         mainRect.anchorMin = new Vector2(1, 0); mainRect.anchorMax = new Vector2(1, 0);
         mainRect.pivot = new Vector2(1, 0);
-        mainRect.sizeDelta = new Vector2(300, 130);
+        mainRect.sizeDelta = new Vector2(320, 170);
         mainRect.anchoredPosition = new Vector2(-35, 24);
     }
 
@@ -784,54 +799,97 @@ public class BattleUIManager : MonoBehaviour
         txt.alignment = TextAnchor.MiddleCenter;
     }
 
-    public void UpdateActionBar(List<BeatPlan> plan)
+    public void UpdateActionBar(IReadOnlyList<BeatPlan> plan)
     {
-        // Clear old visual
-        foreach (var kvp in actionNodesMap)
+        foreach (KeyValuePair<string, Image[]> pair in actionNodesMap)
         {
-            foreach (var nodeBg in kvp.Value)
+            for (int beatIndex = 0; beatIndex < pair.Value.Length; beatIndex++)
             {
-                nodeBg.color = new Color(0.2f, 0.2f, 0.25f, 1f);
-                if (nodeBg.transform.childCount > 0)
+                Image nodeBackground = pair.Value[beatIndex];
+                nodeBackground.color = new Color(0.12f, 0.12f, 0.18f, 1f);
+                actionNodeOutlinesMap[pair.Key][beatIndex].enabled = false;
+
+                if (nodeBackground.transform.childCount > 0)
                 {
-                    Text txt = nodeBg.transform.GetChild(0).GetComponent<Text>();
-                    if (txt != null) txt.text = "";
-                }
-            }
-        }
-
-        if (plan == null) return;
-        
-        UpdateEnemyActionBar(plan);
-
-        Dictionary<string, int> actorActionCount = new Dictionary<string, int>();
-
-        foreach (var beat in plan)
-        {
-            foreach (var action in beat.actions)
-            {
-                if (action.actor == null) continue;
-                string baseName = action.actor.characterName.Replace("Ally_", "").Replace("Enemy_", "");
-                if (!actorActionCount.ContainsKey(baseName)) actorActionCount[baseName] = 0;
-
-                int i = actorActionCount[baseName];
-                if (actionNodesMap.ContainsKey(baseName) && i < actionNodesMap[baseName].Length)
-                {
-                    Image nodeBg = actionNodesMap[baseName][i];
-                    nodeBg.color = (action.type == ActionType.ATTACK) ? new Color(0.3f, 0.4f, 0.6f, 1f) : new Color(0.7f, 0.2f, 0.2f, 1f);
-                    
-                    if (nodeBg.transform.childCount > 0)
+                    Text text = nodeBackground.transform.GetChild(0).GetComponent<Text>();
+                    if (text != null)
                     {
-                        Text txt = nodeBg.transform.GetChild(0).GetComponent<Text>();
-                        if (txt != null)
-                        {
-                            txt.text = (action.type == ActionType.ATTACK) ? "Attack" : "Skill";
-                        }
+                        text.text = "Beat " + (beatIndex + 1);
+                        text.color = new Color(0.55f, 0.55f, 0.62f, 1f);
                     }
-                    actorActionCount[baseName]++;
                 }
             }
         }
+
+        if (plan == null)
+        {
+            return;
+        }
+
+        int visibleBeatCount = Mathf.Min(plan.Count, ActorBeatRules.DemoPlayerBeatCount);
+        for (int beatIndex = 0; beatIndex < visibleBeatCount; beatIndex++)
+        {
+            foreach (PlannedAction action in plan[beatIndex].actions)
+            {
+                if (action == null || action.actor == null)
+                {
+                    continue;
+                }
+
+                string actorName = action.actor.characterName
+                    .Replace("Ally_", string.Empty)
+                    .Replace("Enemy_", string.Empty);
+                if (!actionNodesMap.TryGetValue(actorName, out Image[] actorNodes))
+                {
+                    continue;
+                }
+
+                Image nodeBackground = actorNodes[beatIndex];
+                nodeBackground.color = GetActionNodeColor(action.type);
+                actionNodeOutlinesMap[actorName][beatIndex].enabled =
+                    action.SoulReservation.ReservedBlue > 0;
+
+                if (nodeBackground.transform.childCount == 0)
+                {
+                    continue;
+                }
+
+                Text text = nodeBackground.transform.GetChild(0).GetComponent<Text>();
+                if (text != null)
+                {
+                    text.text = "Beat " + (beatIndex + 1) + "\n" + GetActionLabel(action);
+                    text.color = Color.white;
+                }
+            }
+        }
+    }
+
+    private static Color GetActionNodeColor(ActionType actionType)
+    {
+        switch (actionType)
+        {
+            case ActionType.ATTACK:
+                return new Color(0.22f, 0.35f, 0.58f, 1f);
+            case ActionType.ITEM:
+                return new Color(0.18f, 0.48f, 0.32f, 1f);
+            default:
+                return new Color(0.58f, 0.2f, 0.24f, 1f);
+        }
+    }
+
+    private static string GetActionLabel(PlannedAction action)
+    {
+        if (action.type == ActionType.ATTACK)
+        {
+            return "Attack";
+        }
+
+        if (action.type == ActionType.ITEM)
+        {
+            return action.item != null ? action.item.itemName : "Item";
+        }
+
+        return action.skill != null ? action.skill.skillName : "Skill";
     }
 
     public void UpdateEnemyActionBar(List<BeatPlan> plan)

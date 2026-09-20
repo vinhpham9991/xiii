@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using FrankenXIII.Combat.Domain;
 using UnityEngine;
 
 public enum BattleState { START, PLAYER_TURN, WAIT_TARGET, ENEMY_TURN, WON, LOST }
@@ -23,8 +24,11 @@ public class BattleManager : MonoBehaviour
     public List<CharacterInteraction> enemies = new List<CharacterInteraction>();
     
     // Plans
-    public List<BeatPlan> playerPlan = new List<BeatPlan>();
-    public List<BeatPlan> enemyPlan = new List<BeatPlan>();
+    [SerializeField] private List<BeatPlan> playerPlan = new List<BeatPlan>();
+    [SerializeField] private List<BeatPlan> enemyPlan = new List<BeatPlan>();
+
+    public IReadOnlyList<BeatPlan> PlayerPlan => playerPlan;
+    public IReadOnlyList<BeatPlan> EnemyPlan => enemyPlan;
 
     // Planning Phase
     private bool isExecuting = false;
@@ -161,7 +165,11 @@ public class BattleManager : MonoBehaviour
         if (playerPlan.Count > 0)
         {
             int totalActions = 0;
-            foreach (var beat in playerPlan) totalActions += beat.actions.Count;
+            foreach (BeatPlan beat in playerPlan)
+            {
+                totalActions += beat.actions.Count;
+            }
+
             BattleUIManager.Instance.ShowMessage("Lượt của Phe Ta\n(Nhấn SPACE để THỰC THI " + totalActions + " lệnh)");
         }
     }
@@ -253,49 +261,7 @@ public class BattleManager : MonoBehaviour
             // Remove Action (Delete)
             if (Input.GetKeyDown(KeyCode.Delete) && playerPlan.Count > 0)
             {
-                if (currentActor != null)
-                {
-                    PlannedAction actionToRemove = null;
-                    for (int i = playerPlan.Count - 1; i >= 0; i--)
-                    {
-                        for (int j = playerPlan[i].actions.Count - 1; j >= 0; j--)
-                        {
-                            if (playerPlan[i].actions[j].actor == currentActor)
-                            {
-                                actionToRemove = playerPlan[i].actions[j];
-                                playerPlan[i].actions.RemoveAt(j);
-                                break;
-                            }
-                        }
-                        if (actionToRemove != null) break;
-                    }
-
-                    if (actionToRemove != null)
-                    {
-                        // Clean up empty beats at the end
-                        for (int i = playerPlan.Count - 1; i >= 0; i--)
-                        {
-                            if (playerPlan[i].actions.Count == 0) playerPlan.RemoveAt(i);
-                            else break;
-                        }
-
-                        if (actionToRemove.skill != null)
-                        {
-                            if (actionToRemove.skill.skillName == "MÃºa Ä áº¡i Ä ao")
-                            {
-                                currentActor.currentLimit++;
-                                currentActor.UpdateMiniLimit();
-                            }
-                            else
-                            {
-                                currentRedSoul += actionToRemove.skill.soulCost;
-                            }
-                        }
-                        BattleUIManager.Instance.UpdateSoulUI();
-                        BattleUIManager.Instance.UpdateActionBar(playerPlan);
-                        BattleUIManager.Instance.ShowMessage("Ä Ã£ xÃ³a hÃ nh Ä‘á»™ng má»›i nháº¥t cá»§a " + currentActor.characterName);
-                    }
-                }
+                TryRemoveLatestPlannedAction(currentActor);
             }
             
             // Quick-Switch Characters (Works even if Skill/Item menu is open)
@@ -317,51 +283,12 @@ public class BattleManager : MonoBehaviour
                 return;
             }
 
-                        // Remove Action (Delete) - For Highlighted Character
+            // Remove Action (Delete) - For Highlighted Character
             if (Input.GetKeyDown(KeyCode.Delete) && playerPlan.Count > 0)
             {
                 if (currentHighlight != null && currentHighlight.isAlly)
                 {
-                    PlannedAction actionToRemove = null;
-                    for (int i = playerPlan.Count - 1; i >= 0; i--)
-                    {
-                        for (int j = playerPlan[i].actions.Count - 1; j >= 0; j--)
-                        {
-                            if (playerPlan[i].actions[j].actor == currentHighlight)
-                            {
-                                actionToRemove = playerPlan[i].actions[j];
-                                playerPlan[i].actions.RemoveAt(j);
-                                break;
-                            }
-                        }
-                        if (actionToRemove != null) break;
-                    }
-
-                    if (actionToRemove != null)
-                    {
-                        // Clean up empty beats at the end
-                        for (int i = playerPlan.Count - 1; i >= 0; i--)
-                        {
-                            if (playerPlan[i].actions.Count == 0) playerPlan.RemoveAt(i);
-                            else break;
-                        }
-
-                        if (actionToRemove.skill != null)
-                        {
-                            if (actionToRemove.skill.skillName == "MÃºa Ä áº¡i Ä ao")
-                            {
-                                currentHighlight.currentLimit++;
-                                currentHighlight.UpdateMiniLimit();
-                            }
-                            else
-                            {
-                                currentRedSoul += actionToRemove.skill.soulCost;
-                            }
-                        }
-                        BattleUIManager.Instance.UpdateSoulUI();
-                        BattleUIManager.Instance.UpdateActionBar(playerPlan);
-                        BattleUIManager.Instance.ShowMessage("Ä Ã£ xÃ³a hÃ nh Ä‘á»™ng má»›i nháº¥t cá»§a " + currentHighlight.characterName);
-                    }
+                    TryRemoveLatestPlannedAction(currentHighlight);
                 }
                 return;
             }
@@ -542,26 +469,99 @@ public class BattleManager : MonoBehaviour
         return nearest;
     }
 
+    private bool TryRemoveLatestPlannedAction(CharacterInteraction actor)
+    {
+        if (actor == null)
+        {
+            return false;
+        }
+
+        int latestBeatIndex = ActorBeatRules.FindLatestOccupiedBeat(
+            playerPlan,
+            beat => beat.actions.Exists(action => action.actor == actor));
+        if (latestBeatIndex < 0)
+        {
+            return false;
+        }
+
+        List<PlannedAction> latestBeatActions = playerPlan[latestBeatIndex].actions;
+        PlannedAction actionToRemove = null;
+        for (int actionIndex = latestBeatActions.Count - 1; actionIndex >= 0; actionIndex--)
+        {
+            if (latestBeatActions[actionIndex].actor != actor)
+            {
+                continue;
+            }
+
+            actionToRemove = latestBeatActions[actionIndex];
+            latestBeatActions.RemoveAt(actionIndex);
+            break;
+        }
+
+        if (actionToRemove == null)
+        {
+            return false;
+        }
+
+        for (int beatIndex = playerPlan.Count - 1; beatIndex >= 0; beatIndex--)
+        {
+            if (playerPlan[beatIndex].actions.Count > 0)
+            {
+                break;
+            }
+
+            playerPlan.RemoveAt(beatIndex);
+        }
+
+        SoulEconomy.Refund(
+            ref currentRedSoul,
+            ref currentBlueSoul,
+            actionToRemove.SoulReservation,
+            MAX_RED_SOUL,
+            MAX_BLUE_SOUL);
+
+        if (BattleUIManager.Instance != null)
+        {
+            BattleUIManager.Instance.UpdateSoulUI();
+            BattleUIManager.Instance.UpdateActionBar(playerPlan);
+            BattleUIManager.Instance.ShowMessage("Đã xóa hành động mới nhất của " + actor.characterName);
+        }
+
+        return true;
+    }
+
     public bool ConsumeSouls(int cost)
     {
-        if (currentRedSoul + currentBlueSoul < cost) return false;
-        
-        int redToConsume = Mathf.Min(currentRedSoul, cost);
-        currentRedSoul -= redToConsume;
-        
-        int remainingCost = cost - redToConsume;
-        if (remainingCost > 0)
+        if (!SoulEconomy.TryReserve(
+                ref currentRedSoul,
+                ref currentBlueSoul,
+                cost,
+                out _))
         {
-            currentBlueSoul -= remainingCost;
+            return false;
         }
-        
+
         if (BattleUIManager.Instance != null) BattleUIManager.Instance.UpdateSoulUI();
         return true;
     }
 
     public void AddBlueSoul(int amount, CharacterInteraction actor)
     {
-        StartCoroutine(AnimateBlueSoulDrop(amount, actor));
+        int acceptedAmount = SoulEconomy.GrantBlue(ref currentBlueSoul, amount, MAX_BLUE_SOUL);
+        if (acceptedAmount <= 0)
+        {
+            return;
+        }
+
+        if (BattleUIManager.Instance != null)
+        {
+            BattleUIManager.Instance.UpdateSoulUI();
+        }
+
+        if (actor != null)
+        {
+            StartCoroutine(AnimateBlueSoulDrop(acceptedAmount, actor));
+        }
     }
 
     IEnumerator AnimateBlueSoulDrop(int amount, CharacterInteraction actor)
@@ -620,12 +620,12 @@ public class BattleManager : MonoBehaviour
                 float flyElapsed = 0;
                 Vector3 startFly = soulObj.transform.position;
                 // Bay thật nhanh lên UI trong 0.5s
-                while (flyElapsed < 0.5f)
+                while (flyElapsed < 0.5f && mainCam != null)
                 {
                     // Lấy tọa độ Screen của HUD
                     Vector3 screenPos = targetRect.position;
                     // Dịch màn hình sang thế giới (Camera Z = 10 -> offset 10)
-                    Vector3 uiWorld = Camera.main.ScreenToWorldPoint(new Vector3(screenPos.x + 50f, screenPos.y - 50f, Mathf.Abs(Camera.main.transform.position.z)));
+                    Vector3 uiWorld = mainCam.ScreenToWorldPoint(new Vector3(screenPos.x + 50f, screenPos.y - 50f, Mathf.Abs(mainCam.transform.position.z)));
                     
                     soulObj.transform.position = Vector3.Lerp(startFly, uiWorld, flyElapsed / 0.5f);
                     flyElapsed += Time.deltaTime;
@@ -634,15 +634,7 @@ public class BattleManager : MonoBehaviour
             }
             
             Destroy(soulObj);
-            
-            // Cộng thực tế
-            int oldBlue = currentBlueSoul;
-            currentBlueSoul = Mathf.Min(MAX_BLUE_SOUL, currentBlueSoul + 1);
-            if (currentBlueSoul > oldBlue && BattleUIManager.Instance != null) 
-            {
-                BattleUIManager.Instance.UpdateSoulUI();
-            }
-            
+
             // Đợi xíu trước khi văng hạt tiếp theo (nếu amount > 1)
             yield return new WaitForSeconds(0.2f);
         }
@@ -758,11 +750,12 @@ public class BattleManager : MonoBehaviour
                     item = pendingItem
                 };
 
-                AddActionToPlan(newAction);
-
-                // Reset selection
-                DeselectAll(false);
-                CancelActorSelection();
+                if (AddActionToPlan(newAction))
+                {
+                    // Reset selection only after the action was added successfully.
+                    DeselectAll(false);
+                    CancelActorSelection();
+                }
             }
             else
             {
@@ -789,46 +782,47 @@ public class BattleManager : MonoBehaviour
         }
     }
 
-    private void AddActionToPlan(PlannedAction newAction)
+    private bool AddActionToPlan(PlannedAction newAction)
     {
-        // Đếm xem actor này đã có bao nhiêu action rồi
         int actorActionCount = 0;
-        foreach (var beat in playerPlan)
+        foreach (BeatPlan beat in playerPlan)
         {
-            foreach (var a in beat.actions)
+            foreach (PlannedAction action in beat.actions)
             {
-                if (a.actor == newAction.actor) actorActionCount++;
+                if (action.actor == newAction.actor)
+                {
+                    actorActionCount++;
+                }
             }
         }
 
-        if (actorActionCount >= 2)
+        if (!ActorBeatRules.CanScheduleAction(
+                actorActionCount,
+                ActorBeatRules.DemoPlayerBeatCount))
         {
-            BattleUIManager.Instance.ShowMessage(newAction.actor.characterName + " đã đầy lệnh (tối đa 2 lệnh/round)!");
-            return;
+            BattleUIManager.Instance.ShowMessage(
+                newAction.actor.characterName + " đã đủ " +
+                ActorBeatRules.DemoPlayerBeatCount + " Beat trong round này!");
+            return false;
         }
-        
+
+        SoulReservation reservation = default;
         if (newAction.type == ActionType.SKILL && newAction.skill != null)
         {
             int cost = newAction.skill.soulCost;
-            if (currentRedSoul + currentBlueSoul < cost)
+            if (!SoulEconomy.TryReserve(
+                    ref currentRedSoul,
+                    ref currentBlueSoul,
+                    cost,
+                    out reservation))
             {
                 BattleUIManager.Instance.ShowMessage("Không đủ Hồn Năng!");
-                return;
-            }
-            
-            if (currentRedSoul >= cost)
-            {
-                currentRedSoul -= cost;
-            }
-            else
-            {
-                int remainingCost = cost - currentRedSoul;
-                currentRedSoul = 0;
-                currentBlueSoul -= remainingCost;
+                return false;
             }
         }
 
-        // Khởi tạo Beat nếu chưa có
+        newAction.SetSoulReservation(reservation);
+
         while (playerPlan.Count <= actorActionCount)
         {
             playerPlan.Add(new BeatPlan());
@@ -842,6 +836,8 @@ public class BattleManager : MonoBehaviour
             BattleUIManager.Instance.UpdateSoulUI();
             BattleUIManager.Instance.UpdateActionBar(playerPlan);
         }
+
+        return true;
     }
 
     public void OnExecuteButtonClicked()
@@ -854,19 +850,37 @@ public class BattleManager : MonoBehaviour
 
     private bool HasActionInBeat(CharacterInteraction actor, int beatIndex)
     {
-        if (beatIndex < 0 || beatIndex >= playerPlan.Count) return false;
-        foreach(var a in playerPlan[beatIndex].actions) {
-            if (a.actor == actor && !a.isCancelled) return true;
+        if (beatIndex < 0 || beatIndex >= playerPlan.Count)
+        {
+            return false;
         }
+
+        foreach (PlannedAction action in playerPlan[beatIndex].actions)
+        {
+            if (action.actor == actor && !action.isCancelled)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
     private CharacterInteraction GetTargetInBeat(CharacterInteraction actor, int beatIndex)
     {
-        if (beatIndex < 0 || beatIndex >= playerPlan.Count) return null;
-        foreach(var a in playerPlan[beatIndex].actions) {
-            if (a.actor == actor) return a.target;
+        if (beatIndex < 0 || beatIndex >= playerPlan.Count)
+        {
+            return null;
         }
+
+        foreach (PlannedAction action in playerPlan[beatIndex].actions)
+        {
+            if (action.actor == actor)
+            {
+                return action.target;
+            }
+        }
+
         return null;
     }
 
@@ -902,49 +916,58 @@ public class BattleManager : MonoBehaviour
         
         for (int beatIndex = 0; beatIndex < playerPlan.Count; beatIndex++)
         {
-            var beat = playerPlan[beatIndex];
-            
-            foreach (var action in beat.actions)
+            BeatPlan beat = playerPlan[beatIndex];
+
+            foreach (PlannedAction action in beat.actions)
             {
-                if (action.actor.isDead) 
+                if (action.actor.isDead)
                 {
                     action.isCancelled = true;
                     continue;
                 }
-                
-                if (action.target.isDead && action.type != ActionType.ITEM)
+
+                if (action.target != null && action.target.isDead && action.type != ActionType.ITEM)
                 {
                     action.isCancelled = true;
                     BattleUIManager.Instance.ShowMessage(action.actor.characterName + " hủy lệnh vì mục tiêu đã chết!");
                     continue;
                 }
 
-                bool isFirst = (beatIndex == 0) || !HasActionInBeat(action.actor, beatIndex - 1);
-                bool isLast = (beatIndex == playerPlan.Count - 1) || !HasActionInBeat(action.actor, beatIndex + 1);
-                CharacterInteraction prevTarget = null;
-                if (!isFirst) prevTarget = GetTargetInBeat(action.actor, beatIndex - 1);
+                bool isFirst = beatIndex == 0 || !HasActionInBeat(action.actor, beatIndex - 1);
+                bool isLast = beatIndex == playerPlan.Count - 1 || !HasActionInBeat(action.actor, beatIndex + 1);
+                CharacterInteraction previousTarget = isFirst
+                    ? null
+                    : GetTargetInBeat(action.actor, beatIndex - 1);
 
-                // Add random slight delay (Presentation Offset) so they don't hit at the exact same frame
-                StartCoroutine(ExecuteActionWithOffset(action, isFirst, isLast, prevTarget, Random.Range(0f, 0.2f)));
+                StartCoroutine(ExecuteActionWithOffset(
+                    action,
+                    isFirst,
+                    isLast,
+                    previousTarget,
+                    Random.Range(0f, 0.2f)));
             }
 
-            // Chờ cho tất cả hành động trong beat này resolved hoặc cancelled
             while (true)
             {
-                bool allDone = true;
-                foreach (var action in beat.actions)
+                bool allActionsResolved = true;
+                foreach (PlannedAction action in beat.actions)
                 {
                     if (!action.isResolved && !action.isCancelled)
                     {
-                        allDone = false;
+                        allActionsResolved = false;
                         break;
                     }
                 }
-                if (allDone) break;
+
+                if (allActionsResolved)
+                {
+                    break;
+                }
+
                 yield return null;
             }
 
-            yield return new WaitForSeconds(0.5f); // Beat Barrier
+            yield return new WaitForSeconds(0.5f);
         }
 
         playerPlan.Clear();
@@ -955,10 +978,19 @@ public class BattleManager : MonoBehaviour
         EnemyTurn();
     }
 
-    private IEnumerator ExecuteActionWithOffset(PlannedAction action, bool isFirst, bool isLast, CharacterInteraction prevTarget, float offset)
+    private IEnumerator ExecuteActionWithOffset(
+        PlannedAction action,
+        bool isFirst,
+        bool isLast,
+        CharacterInteraction previousTarget,
+        float offset)
     {
-        if (offset > 0) yield return new WaitForSeconds(offset);
-        yield return StartCoroutine(ExecuteActionAsync(action, isFirst, isLast, prevTarget));
+        if (offset > 0f)
+        {
+            yield return new WaitForSeconds(offset);
+        }
+
+        yield return StartCoroutine(ExecuteActionAsync(action, isFirst, isLast, previousTarget));
     }
 
     [Header("UI")]
@@ -1122,7 +1154,8 @@ public class BattleManager : MonoBehaviour
         int damage = 0;
         int limitDamage = 0;
         bool isCrit = false;
-        int generatedSouls = 0;
+        bool targetWasDazed = target.isDazed;
+        bool hitWeakpoint = target.hasWeakpoint;
 
         // --- 7-LAYER DAMAGE PIPELINE ---
         if (actionType == ActionType.ATTACK)
@@ -1147,9 +1180,6 @@ public class BattleManager : MonoBehaviour
             CameraShake.Instance.TriggerShake(0.2f, 0.5f);
         }
 
-        if (isCrit) generatedSouls++;
-        if (target.hasWeakpoint) generatedSouls++;
-
         // --- Hậu Kỳ (Lifesteal & Cost) ---
         if (actionType == ActionType.SKILL && skill != null)
         {
@@ -1168,7 +1198,7 @@ public class BattleManager : MonoBehaviour
                 }
             }
             
-            if (skill.skillName == "Huyết Đoạn Kích")
+            if (skill.skillName == "Huyết Đoạn Kích" && (targetWasDazed || isCrit))
             {
                 int heal = Mathf.FloorToInt(damage * 0.2f);
                 actor.currentHP = Mathf.Min(actor.maxHP, actor.currentHP + heal);
@@ -1183,7 +1213,9 @@ public class BattleManager : MonoBehaviour
         dmgText.Setup(damage, isCrit, false, Color.white); 
         
         target.currentHP -= damage;
-        
+
+        bool enteredDaze = false;
+
         // Trừ Limit
         if (!target.isDead && limitDamage > 0)
         {
@@ -1192,11 +1224,19 @@ public class BattleManager : MonoBehaviour
             {
                 target.currentLimit = 0;
                 target.isDazed = true;
-                generatedSouls++;
-                BattleUIManager.Instance.ShowMessage(target.characterName + " bị ĐÁNH CHOÁNG (DAZE)!");
+                enteredDaze = !targetWasDazed;
+                if (enteredDaze)
+                {
+                    BattleUIManager.Instance.ShowMessage(target.characterName + " bị ĐÁNH CHOÁNG (DAZE)!");
+                }
             }
             target.UpdateMiniLimit();
         }
+
+        int generatedSouls = CombatRewardRules.CalculateBlueSoulReward(
+            enteredDaze,
+            isCrit,
+            hitWeakpoint);
 
         if (generatedSouls > 0)
         {
@@ -1434,7 +1474,7 @@ public class BattleManager : MonoBehaviour
         foreach (var enemy in aliveEnemies)
         {
             bool isBoss = enemy.characterName.ToLower().Contains("boss");
-            int beatCount = isBoss ? 3 : 1;
+            int beatCount = ActorBeatRules.GetEnemyBeatCount(isBoss);
             
             for (int b = 0; b < beatCount; b++)
             {
@@ -1462,6 +1502,11 @@ public class BattleManager : MonoBehaviour
                 
                 enemyPlan[b].AddAction(pAction);
             }
+        }
+
+        if (BattleUIManager.Instance != null)
+        {
+            BattleUIManager.Instance.UpdateEnemyActionBar(enemyPlan);
         }
     }
 

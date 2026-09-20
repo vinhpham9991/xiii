@@ -1,0 +1,21 @@
+{
+    "name": "FrankenXIII.Combat.Domain.Tests",
+    "rootNamespace": "FrankenXIII.Combat.Domain.Tests",
+    "references": [
+        "FrankenXIII.Combat.Domain"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}
