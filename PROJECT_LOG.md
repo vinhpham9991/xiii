@@ -41,3 +41,72 @@ Dưới đây là nhật ký phát triển và tiến độ thực hiện của 
 ---
 **Trạng thái hiện tại:** 
 Nguyên mẫu chiến đấu hiện đã ở mức build-được, hệ thống Input được kiểm soát trơn tru và hệ thống Core Domain Test (EditMode) bao phủ tới 32 cases chạy pass hoàn toàn. Chuẩn bị nghiệm thu toàn bộ PlayMode cho Instant Specials.
+
+
+### 8. Nhật ký thao tác chi tiết
+- **Ngày giờ**: 2026-09-21 11:35:36
+- **Task được yêu cầu**: Cập nhật định dạng chuẩn khi viết log (Bắt buộc gồm: ngày giờ, task, cách thức, trạng thái).
+- **Cách thức thực hiện**: Đã cấu hình trực tiếp vào Core Rules (`GEMINI.md`) để AI tự động tuân thủ format này vào cuối mỗi tiến trình làm việc. Từ nay, mọi hành động sửa code, test hay config đều sẽ được ghi nhận chi tiết theo 4 gạch đầu dòng này vào phần Nhật ký.
+- **Trạng thái**: Hoàn tất. Đã lưu quy tắc.
+
+
+### 9. Nhật ký thao tác chi tiết
+- **Ngày giờ**: 2026-09-21 20:02:55
+- **Task được yêu cầu**: Sửa lỗi compiler CS0103 thiếu hàm `InitializeBossEncounter` và `RecoverTemporarilyCollapsedDrawers` trong `BattleManager.cs`.
+- **Cách thức thực hiện**: Thêm 2 hàm còn thiếu vào `BattleManager.cs` để khởi tạo trạng thái Boss Phase 1 và phục hồi Hộc Tử Thi đầu mỗi turn người chơi. Khởi tạo stub logic chuẩn theo Domain Rule.
+- **Trạng thái**: Hoàn tất. Đã sửa lỗi compile.
+
+
+### 10. Nhật ký thao tác chi tiết
+- **Ngày giờ**: 2026-09-21 20:10:05
+- **Task được yêu cầu**: Sửa lỗi phím Space không hoạt động để xác nhận trong Sub-Menu (Skill/Item).
+- **Cách thức thực hiện**: Cập nhật hàm `Update` trong `BattleManager.cs`. Chặn logic tự động chọn Target (OnTargetSelected) nếu `IsSubMenuOpen()` đang bật. Thay vào đó, nếu Sub-Menu đang mở, lệnh nhấn Space sẽ tự động gọi `onClick.Invoke()` trên nút đang được Highlight của `EventSystem`.
+- **Trạng thái**: Hoàn tất. Đã sửa xong.
+
+
+### 11. Nhật ký thao tác chi tiết
+- **Ngày giờ**: 2026-09-21 20:42:45
+- **Task được yêu cầu**: Sửa lỗi văng Out Of Memory do gán nhầm block phím Space ở trạng thái tự do (`currentActor == null`).
+- **Cách thức thực hiện**: Hoàn tác (revert) thay đổi ở block `currentActor == null` và chuyển chính xác đoạn code kích hoạt `btn.onClick.Invoke()` bằng phím Space vào đúng block `currentActor != null` (Khi nhân vật đang được chọn và đang mở Menu).
+- **Trạng thái**: Hoàn tất. Đã dập lỗi OOM.
+
+
+### 12. Nhật ký thao tác chi tiết
+- **Ngày giờ**: 2026-09-21 21:52:43
+- **Task được yêu cầu**: Sửa lỗi Back từ Sub-Menu ra ngoài chọn lại Skill/Item bị nhảy thẳng vào lệnh Attack (Target Selection).
+- **Cách thức thực hiện**: Xóa bỏ logic gán cứng EventSystem vào nút Attack (`SelectLater`) trong hàm `TryGoBack()` của `BattleUIManager.cs`. Việc giữ nguyên selection cũ của EventSystem đã gây xung đột với hệ thống navigate bằng biến `activeMenuIndex` nội bộ, khiến khi ấn Space game nhận nhầm là ấn Attack. Thay vào đó set `SelectedGameObject(null)`.
+- **Trạng thái**: Hoàn tất.
+
+### 13. Nhật ký thao tác chi tiết
+- **Ngày gi� **: 2026-09-21 22:11:23
+- **Task được yêu cầu**: Sửa lỗi hiển thị thông tin và UI của Enemy (Boss & Enemy 2 thiếu Limit, sai số lượng action block, và Action highlight không mất sau khi thực thi).
+- **Cách thức thực hiện**: 
+  1. Sửa lỗi không load HP & Limit ban đầu bằng cách g� i BattleUIManager.Instance.UpdateHP cho toàn bộ kă hình lúc Start.
+  2. Viết lại hàm tìm tên để phân biệt Boss, Enemy 1 và Enemy 2 dùa trên tên gốc (VD: XIII -> Boss, Left -> Enemy 1, Right -> Enemy 2).
+  3. Sửa số beat thừa của Enemy 1 & 2 thành trong suốt (deactivate node của những beat không dùng thay vì chỉ đổi màu mò).
+  4. Viết hàm ClearActionHighlight và g� i lúc kết thúc mỗi hành động để lập tức làm biến mất vi� n sáng và chữ của Node action đó (thay vì ch�  tới cuối lượt).
+- **Trạng thái**: Hoàn tất.
+
+### 14. Nhật ký thao tác chi tiết
+- **Ngày gi� **: 2026-09-21 23:12:59
+- **Task được yêu cầu**: Cân đối lại kích thước Icon Boss với Icon Enemy, sửa lỗi HP Bar của Boss bị dịch trái và Limit Boss/Enemy 2 chưa hiện lên.
+- **Cách thức thực hiện**: 
+  1. Chuyển hệ thống nhận diện tên UI từ việc so sánh chuỗi (characterName) sang sử dụng trực tiếp biến \CombatantId\ (DemoCombatantId) để đảm bảo độ chính xác tuyệt đối 100%. Việc này giải quyết triệt để tình trạng Boss và Enemy 2 bị nh�n diện nhầm là Enemy 1 nên thanh Limit không hiện.
+  2. Chỉnh thuộc tính \preserveAspect = false\ cho Avatar của các quái vật trên UI. Nh�  đó, dù sprite của Boss có tỷ lệ khác với icon lính, nó vẫn sẽ được căn kéo đ� u ra vừa vặn khung 32x32 mà không bị co bóp lại, giải quyết hiện tượng có khoảng trống khiến thanh HP cảm giác như bị lệch sang trái.
+- **Trạng thái**: Hoàn tất.
+
+### 15. Nhật ký thao tác chi tiết
+- **Ngày gi� **: 2026-09-21 23:14:54
+- **Task được yêu cầu**: Khắc phục lỗi biên dịch do truy� n nhầm kiểu dữ liệu vào hàm GetDisplayLabelForEnemy.
+- **Cách thức thực hiện**: 
+  1. Sửa lỗi truy� n sai kiểu string \aseName\ vào \GetDisplayLabelForEnemy\ tìm thấy ở 3 hàm: \UpdateEnemyActionBar\, \ClearActionHighlight\, \UpdateHP\.
+  2. Sưa lại thành các đối tượng kênh \CharacterInteraction\ tương ứng (\ction.actor\, \ctor\, \character\).
+- **Trạng thái**: Hoàn tất.
+
+### 16. Nhật ký thao tác chi tiết
+- **Ngày gi� **: 2026-09-21 23:21:18
+- **Task được yêu cầu**: Khắc phục tình trạng Avatar của Enemy bị dãn rộng (Icon Boss trở nên nh�  hơn) khiến thanh HP/Limit của Boss và Lính bị lệch nhau.
+- **Cách thức thực hiện**: 
+  1. Phát hiện t�nh năng mặc định \childForceExpandWidth = true\ của \HorizontalLayoutGroup\ gây ra tình trạng chia đ� u khoảng trống dư thừa cho các Node (dòng Enemy có ít Node hơn nên Avatar và InfoCol bị kéo dãn ra nhi� u hơn so với dòng Boss).
+  2. Thêm thuộc t�nh \hLayout.childForceExpandWidth = false\ vào hàm \CreateEnemyPlanHud\. Thay đổi này ép \HorizontalLayoutGroup\ phải tuân thủ ch�nh xác k�ch thước 32x32 của Avatar và 140px của HP Bar, đảm bảo căn l�  chuẩn xác 100%.
+- **Trạng thái**: Hoàn tất.

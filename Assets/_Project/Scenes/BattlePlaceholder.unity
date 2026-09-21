@@ -310,7 +310,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterInteraction
   isAlly: 0
   isSelected: 0
-  characterName: Bách Mệnh Quan
+  characterName: "B\xE1ch M\u1EC7nh Quan"
   demoCombatantId: 4
   maxHP: 10000
   currentHP: 10000
@@ -1492,7 +1492,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterInteraction
   isAlly: 0
   isSelected: 0
-  characterName: Hộc Tử Thi Phải
+  characterName: "H\u1ED9c T\u1EED Thi Ph\u1EA3i"
   demoCombatantId: 6
   maxHP: 1500
   currentHP: 1500
@@ -2011,7 +2011,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterInteraction
   isAlly: 0
   isSelected: 0
-  characterName: Hộc Tử Thi Trái
+  characterName: "H\u1ED9c T\u1EED Thi Tr\xE1i"
   demoCombatantId: 5
   maxHP: 1500
   currentHP: 1500

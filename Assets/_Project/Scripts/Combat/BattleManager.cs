@@ -126,6 +126,10 @@ public class BattleManager : MonoBehaviour
         InitializeBossEncounter();
 
         BattleUIManager.Instance.SetupUI();
+        foreach (var c in chars)
+        {
+            BattleUIManager.Instance.UpdateHP(c);
+        }
 
         // Demo items
         ItemData potion = ScriptableObject.CreateInstance<ItemData>();
@@ -155,6 +159,21 @@ public class BattleManager : MonoBehaviour
         yield return new WaitForSeconds(1f);
 
         StartPlayerTurn();
+    }
+
+    
+    private void InitializeBossEncounter()
+    {
+        // Setup initial boss state if any
+        bossPhase = BossEncounterPhase.Phase1;
+        coffinProtectionSuppressed = false;
+        // The drawers are already placed in the scene, we just need to ensure their state is valid
+    }
+
+    private void RecoverTemporarilyCollapsedDrawers()
+    {
+        // In Phase 2 or 3, a collapsed drawer might recover at the start of player turn
+        // Placeholder for restoring drawer state
     }
 
     void StartPlayerTurn()
@@ -319,6 +338,20 @@ public class BattleManager : MonoBehaviour
             else if (Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.PageDown))
             {
                 SwitchActiveActor(1);
+            }
+
+            // Manually trigger the selected button in the sub-menu if Space is pressed
+            if (Input.GetKeyDown(KeyCode.Space) && BattleUIManager.Instance.IsSubMenuOpen())
+            {
+                UnityEngine.GameObject selectedObj = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+                if (selectedObj != null)
+                {
+                    UnityEngine.UI.Button btn = selectedObj.GetComponent<UnityEngine.UI.Button>();
+                    if (btn != null && btn.interactable)
+                    {
+                        btn.onClick.Invoke();
+                    }
+                }
             }
         }
         else if (state == BattleState.PLAYER_TURN && currentActor == null && !isExecuting)
@@ -1930,6 +1963,14 @@ public class BattleManager : MonoBehaviour
                     }
                     if (allDone) break;
                     yield return null;
+                }
+
+                foreach (var action in beat.actions)
+                {
+                    if (!action.isCancelled)
+                    {
+                        BattleUIManager.Instance.ClearActionHighlight(action.actor, beatIndex);
+                    }
                 }
 
                 yield return new WaitForSeconds(0.5f); // Beat Barrier

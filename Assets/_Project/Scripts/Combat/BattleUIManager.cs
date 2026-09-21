@@ -693,7 +693,7 @@ public class BattleUIManager : MonoBehaviour
             avatarLe.preferredHeight = 32;
             avatarLe.flexibleWidth = 0;
             Image avatarImg = avatarObj.AddComponent<Image>();
-            avatarImg.preserveAspect = true;
+            avatarImg.preserveAspect = false;
             
             Sprite sp = Resources.Load<Sprite>("UI/" + actorName + "-icon");
             if (sp == null)
@@ -911,14 +911,18 @@ public class BattleUIManager : MonoBehaviour
             {
                 Image nodeBg = kvp.Value[i];
                 bool isActive = (kvp.Key == "Boss" && i < 3) || (kvp.Key != "Boss" && i < 1);
-                nodeBg.color = isActive ? new Color(0.15f, 0.15f, 0.25f, 1f) : new Color(0.1f, 0.1f, 0.12f, 0.5f);
-                if (nodeBg.transform.childCount > 0)
+                nodeBg.gameObject.SetActive(isActive);
+                if (isActive)
                 {
-                    Text txt = nodeBg.transform.GetChild(0).GetComponent<Text>();
-                    if (txt != null)
+                    nodeBg.color = new Color(0.15f, 0.15f, 0.25f, 1f);
+                    if (nodeBg.transform.childCount > 0)
                     {
-                        txt.text = isActive ? "-" : "";
-                        txt.color = isActive ? Color.white : new Color(0.5f, 0.5f, 0.5f, 1f);
+                        Text txt = nodeBg.transform.GetChild(0).GetComponent<Text>();
+                        if (txt != null)
+                        {
+                            txt.text = "-";
+                            txt.color = Color.white;
+                        }
                     }
                 }
             }
@@ -933,11 +937,7 @@ public class BattleUIManager : MonoBehaviour
             {
                 if (action.actor == null || action.actor.isAlly) continue;
                 string baseName = action.actor.characterName.Replace("Ally_", "").Replace("Enemy_", "");
-                
-                // Map internal names to display labels
-                string displayLabel = "Enemy 1";
-                if (baseName.ToLower().Contains("boss")) displayLabel = "Boss";
-                else if (baseName.Contains("2")) displayLabel = "Enemy 2";
+                string displayLabel = GetDisplayLabelForEnemy(action.actor);
                 
                 if (!actorActionCount.ContainsKey(displayLabel)) actorActionCount[displayLabel] = 0;
 
@@ -1000,6 +1000,7 @@ public class BattleUIManager : MonoBehaviour
             hLayout.childAlignment = TextAnchor.MiddleLeft;
             hLayout.childControlHeight = true;
             hLayout.childControlWidth = true;
+            hLayout.childForceExpandWidth = false;
 
             // Avatar placeholder
             GameObject avatarObj = new GameObject("Avatar");
@@ -1011,7 +1012,7 @@ public class BattleUIManager : MonoBehaviour
             avatarLe.preferredHeight = 32;
             avatarLe.flexibleWidth = 0;
             Image avatarImg = avatarObj.AddComponent<Image>();
-            avatarImg.preserveAspect = true;
+            avatarImg.preserveAspect = false;
             
             string spriteName = (eLabel == "Boss") ? "Boss-icon" : "enemy-icon";
             Sprite sp = Resources.Load<Sprite>("UI/" + spriteName);
@@ -1101,6 +1102,7 @@ public class BattleUIManager : MonoBehaviour
                 bool isActive = (i < beatCounts[e]);
                 GameObject nodeObj = new GameObject("EnemyNode_" + i);
                 nodeObj.transform.SetParent(rowObj.transform, false);
+                nodeObj.SetActive(isActive);
                 LayoutElement nodeLe = nodeObj.AddComponent<LayoutElement>();
                 nodeLe.minWidth = 36;
                 nodeLe.minHeight = 32;
@@ -1445,13 +1447,13 @@ public class BattleUIManager : MonoBehaviour
         if (skillMenu != null && skillMenu.activeSelf)
         {
             ShowSkillMenu(false);
-            if (actionButtons.ContainsKey(ActionType.ATTACK)) StartCoroutine(SelectLater(actionButtons[ActionType.ATTACK].gameObject));
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
             return true;
         }
         else if (itemMenu != null && itemMenu.activeSelf)
         {
             ShowItemMenu(false);
-            if (actionButtons.ContainsKey(ActionType.ATTACK)) StartCoroutine(SelectLater(actionButtons[ActionType.ATTACK].gameObject));
+            UnityEngine.EventSystems.EventSystem.current.SetSelectedGameObject(null);
             return true;
         }
         return false;
@@ -1540,6 +1542,45 @@ public class BattleUIManager : MonoBehaviour
         // Removed as per request (HP is now in Action Bar)
     }
 
+    
+    private string GetDisplayLabelForEnemy(CharacterInteraction character)
+    {
+        if (character == null) return "Enemy 1";
+        if (character.CombatantId == DemoCombatantId.BachMenhQuan || character.CombatantId == DemoCombatantId.XIII) return "Boss";
+        if (character.CombatantId == DemoCombatantId.RightCorpseDrawer) return "Enemy 2";
+        return "Enemy 1";
+    }
+
+    public void ClearActionHighlight(CharacterInteraction actor, int beatIndex)
+    {
+        if (actor == null) return;
+        string baseName = actor.characterName.Replace("Ally_", "").Replace("Enemy_", "");
+        if (actor.isAlly)
+        {
+            if (actionNodeOutlinesMap.ContainsKey(baseName) && beatIndex < actionNodeOutlinesMap[baseName].Length)
+            {
+                actionNodeOutlinesMap[baseName][beatIndex].enabled = false;
+                actionNodesMap[baseName][beatIndex].color = new Color(0.12f, 0.12f, 0.18f, 1f);
+                var txt = actionNodesMap[baseName][beatIndex].transform.GetChild(0).GetComponent<UnityEngine.UI.Text>();
+                if (txt != null) { txt.text = "-"; txt.color = new Color(0.55f, 0.55f, 0.62f, 1f); }
+            }
+        }
+        else
+        {
+            string displayLabel = GetDisplayLabelForEnemy(actor);
+            if (enemyActionNodesMap.ContainsKey(displayLabel) && beatIndex < enemyActionNodesMap[displayLabel].Length)
+            {
+                var nodeBg = enemyActionNodesMap[displayLabel][beatIndex];
+                nodeBg.color = new Color(0.15f, 0.15f, 0.25f, 1f);
+                if (nodeBg.transform.childCount > 0)
+                {
+                    var txt = nodeBg.transform.GetChild(0).GetComponent<UnityEngine.UI.Text>();
+                    if (txt != null) { txt.text = "-"; txt.color = UnityEngine.Color.white; }
+                }
+            }
+        }
+    }
+
     public void UpdateLimitHUD(CharacterInteraction enemy)
     {
         // Removed as per request (HP is now in Action Bar)
@@ -1570,9 +1611,7 @@ public class BattleUIManager : MonoBehaviour
         }
         else
         {
-            string displayLabel = "Enemy 1";
-            if (baseName.ToLower().Contains("boss")) displayLabel = "Boss";
-            else if (baseName.Contains("2")) displayLabel = "Enemy 2";
+            string displayLabel = GetDisplayLabelForEnemy(character);
             
             if (enemyHpTextsMap.ContainsKey(displayLabel) && enemyHpTextsMap[displayLabel] != null)
             {
