@@ -2,6 +2,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
+using FrankenXIII.Combat.Domain;
 
 public class BattleSceneGenerator
 {
@@ -137,10 +138,10 @@ public class BattleSceneGenerator
         // Đội hình Enemy (Đỏ) - Bên trái, spawn ngoài màn hình X = -15
         Vector3 enemyOffset = new Vector3(-15f, 0, 0);
         // Boss đỏ xuất hiện trễ 0.2s và phi vào siêu nhanh (speed 40)
-        Create2DCharacter(new Vector3(-8f, 10f, 0f), enemyOffset, matBoss, "Enemy_Boss", safeUnlitShader, true, texBoss, 2.168f, 0.2f, 40f, true, false, 1000, "Franken Boss");
+        Create2DCharacter(new Vector3(-8f, 10f, 0f), enemyOffset, matBoss, "Enemy_Boss", safeUnlitShader, true, texBoss, 2.168f, 0.2f, 40f, true, false, 1000, "Bách Mệnh Quan", DemoCombatantId.BachMenhQuan);
         // Quái nhỏ 
-        Create2DCharacter(new Vector3(-6, 10f, 3f), enemyOffset, matEnemy, "Enemy_Support_Top", safeUnlitShader, true, texEnemy, 1f, 0f, 20f, false, false, 100, "Minion A");
-        Create2DCharacter(new Vector3(-6, 10f, -3f), enemyOffset, matEnemy, "Enemy_Support_Bot", safeUnlitShader, true, texEnemy, 1f, 0f, 20f, false, false, 100, "Minion B");
+        Create2DCharacter(new Vector3(-6, 10f, 3f), enemyOffset, matEnemy, "Enemy_Support_Top", safeUnlitShader, true, texEnemy, 1f, 0f, 20f, false, false, 100, "Hộc Tử Thi Trái", DemoCombatantId.LeftCorpseDrawer);
+        Create2DCharacter(new Vector3(-6, 10f, -3f), enemyOffset, matEnemy, "Enemy_Support_Bot", safeUnlitShader, true, texEnemy, 1f, 0f, 20f, false, false, 100, "Hộc Tử Thi Phải", DemoCombatantId.RightCorpseDrawer);
 
         // Đội hình Ally (Xanh / Textures) - Bên phải, spawn ngoài màn hình X = +15
         // Chuyển về đúng chuẩn Universal Render Pipeline / Unlit như phe Đỏ
@@ -174,9 +175,9 @@ public class BattleSceneGenerator
 
         Vector3 allyOffset = new Vector3(15f, 0, 0);
         // Cấp thêm texture vào hàm Create2DCharacter để tính tỷ lệ khung hình
-        Create2DCharacter(new Vector3(3, 10f, 0), allyOffset, matXIII, "Ally_XIII", safeUnlitShader, true, texXIII, 1f, 0f, 20f, false, true, 350, "XIII");
-        Create2DCharacter(new Vector3(6, 10f, 3f), allyOffset, matAn, "Ally_An", safeUnlitShader, true, texAn, 1f, 0f, 20f, false, true, 180, "An");
-        Create2DCharacter(new Vector3(6, 10f, -3f), allyOffset, matMac, "Ally_Mac", safeUnlitShader, true, texMac, 1f, 0f, 20f, false, true, 220, "Mac");
+        Create2DCharacter(new Vector3(3, 10f, 0), allyOffset, matXIII, "Ally_XIII", safeUnlitShader, true, texXIII, 1f, 0f, 20f, false, true, 350, "XIII", DemoCombatantId.XIII);
+        Create2DCharacter(new Vector3(6, 10f, 3f), allyOffset, matAn, "Ally_An", safeUnlitShader, true, texAn, 1f, 0f, 20f, false, true, 180, "An", DemoCombatantId.An);
+        Create2DCharacter(new Vector3(6, 10f, -3f), allyOffset, matMac, "Ally_Mac", safeUnlitShader, true, texMac, 1f, 0f, 20f, false, true, 220, "Mac", DemoCombatantId.Mac);
 
         // Khởi tạo hệ thống Combat
         GameObject battleSystem = new GameObject("BattleSystem");
@@ -253,7 +254,7 @@ public class BattleSceneGenerator
         }
     }
 
-    private static void Create2DCharacter(Vector3 finalPos, Vector3 spawnOffset, Material mat, string name, Shader borderShader, bool hideBorder = false, Texture2D tex = null, float scaleMultiplier = 1f, float delay = 0f, float moveSpeed = 20f, bool shakeScreen = false, bool isAlly = false, int hp = 100, string charName = "")
+    private static void Create2DCharacter(Vector3 finalPos, Vector3 spawnOffset, Material mat, string name, Shader borderShader, bool hideBorder = false, Texture2D tex = null, float scaleMultiplier = 1f, float delay = 0f, float moveSpeed = 20f, bool shakeScreen = false, bool isAlly = false, int hp = 100, string charName = "", DemoCombatantId combatantId = DemoCombatantId.None)
     {
         // 1. TẠO ROOT (Chịu trách nhiệm Vật Lý)
         GameObject root = new GameObject(name);
@@ -270,9 +271,10 @@ public class BattleSceneGenerator
         CharacterInteraction interaction = root.AddComponent<CharacterInteraction>();
         interaction.isAlly = isAlly;
         interaction.characterName = string.IsNullOrEmpty(charName) ? name : charName;
+        interaction.ConfigureCombatantId(combatantId);
         
         // Gán chỉ số chuẩn Demo Funding
-        if (interaction.characterName.Contains("XIII"))
+        if (combatantId == DemoCombatantId.XIII)
         {
             interaction.maxHP = 2200; interaction.baseDEF = 15; interaction.baseATK = 40; interaction.baseBreakATK = 2;
             interaction.baseCritRate = 0.15f; interaction.baseCritDMG = 1.5f; interaction.element = "Physical";
@@ -284,7 +286,7 @@ public class BattleSceneGenerator
             bH.selfDamage = 150;
             interaction.activeSkills.Add(bH);
         }
-        else if (interaction.characterName.Contains("Mac"))
+        else if (combatantId == DemoCombatantId.Mac)
         {
             interaction.maxHP = 1650; interaction.baseDEF = 10; interaction.baseATK = 28; interaction.baseBreakATK = 1;
             interaction.baseCritRate = 0.25f; interaction.baseCritDMG = 1.6f; interaction.element = "Mixed";
@@ -301,7 +303,7 @@ public class BattleSceneGenerator
             m3.atkBuff = 0.25f;
             interaction.activeSkills.Add(m3);
         }
-        else if (interaction.characterName.Contains("An"))
+        else if (combatantId == DemoCombatantId.An)
         {
             interaction.maxHP = 1200; interaction.baseDEF = 6; interaction.baseATK = 22; interaction.baseBreakATK = 1;
             interaction.baseCritRate = 0.05f; interaction.baseCritDMG = 1.5f; interaction.element = "Mental";
@@ -318,11 +320,23 @@ public class BattleSceneGenerator
             a3.isMental = true;
             interaction.activeSkills.Add(a3);
         }
-        else if (interaction.characterName.Contains("Boss"))
+        else if (combatantId == DemoCombatantId.BachMenhQuan)
         {
             interaction.maxHP = 10000; interaction.baseDEF = 12; interaction.baseATK = 35; interaction.baseBreakATK = 2;
             interaction.baseCritRate = 0.10f; interaction.baseCritDMG = 1.5f; interaction.element = "Physical";
             interaction.maxLimit = 10;
+        }
+        else if (combatantId == DemoCombatantId.LeftCorpseDrawer)
+        {
+            interaction.maxHP = BossEncounterRules.DrawerMaxHp; interaction.baseDEF = 8; interaction.baseATK = 20; interaction.baseBreakATK = 1;
+            interaction.baseCritRate = 0f; interaction.baseCritDMG = 1.5f; interaction.element = "Physical";
+            interaction.maxLimit = BossEncounterRules.DrawerMaxLimit;
+        }
+        else if (combatantId == DemoCombatantId.RightCorpseDrawer)
+        {
+            interaction.maxHP = BossEncounterRules.DrawerMaxHp; interaction.baseDEF = 8; interaction.baseATK = 25; interaction.baseBreakATK = 2;
+            interaction.baseCritRate = 0f; interaction.baseCritDMG = 1.5f; interaction.element = "Mental";
+            interaction.maxLimit = BossEncounterRules.DrawerMaxLimit;
         }
         else // Enemy thường (Ví dụ: Toán Cướp Lưu Vong)
         {

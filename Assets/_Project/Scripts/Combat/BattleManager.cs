@@ -44,6 +44,18 @@ public class BattleManager : MonoBehaviour
     private bool egoRebornUnlocked;
     private bool egoRebornActivated;
 
+    // Funding Demo boss encounter state. Stable IDs keep authored display names out of gameplay routing.
+    private CharacterInteraction bachMenhQuan;
+    private CharacterInteraction leftCorpseDrawer;
+    private CharacterInteraction rightCorpseDrawer;
+    private readonly HashSet<CharacterInteraction> temporarilyCollapsedDrawers =
+        new HashSet<CharacterInteraction>();
+    private BossEncounterPhase bossPhase = BossEncounterPhase.None;
+    private bool coffinProtectionSuppressed;
+    private bool phaseThreePlayerWindowOpened;
+
+    public BossEncounterPhase CurrentBossPhase => bossPhase;
+
     public bool IsSelectingSpecialTarget =>
         state == BattleState.WAIT_TARGET &&
         pendingSpecialCommand == DemoSpecialCommand.Omniscience;
@@ -111,6 +123,8 @@ public class BattleManager : MonoBehaviour
             else enemies.Add(c);
         }
 
+        InitializeBossEncounter();
+
         BattleUIManager.Instance.SetupUI();
 
         // Demo items
@@ -145,6 +159,13 @@ public class BattleManager : MonoBehaviour
 
     void StartPlayerTurn()
     {
+        RecoverTemporarilyCollapsedDrawers();
+        coffinProtectionSuppressed = false;
+        if (bossPhase == BossEncounterPhase.Phase3 && !egoRebornActivated)
+        {
+            phaseThreePlayerWindowOpened = true;
+        }
+
         if (playerRoundNumber > 0)
         {
             AdvanceSpecialCooldowns();
@@ -695,11 +716,27 @@ public class BattleManager : MonoBehaviour
 
     private DemoSpecialCommand GetSpecialCommand(CharacterInteraction actor)
     {
-        if (actor == null || string.IsNullOrEmpty(actor.characterName))
+        if (actor == null)
         {
             return DemoSpecialCommand.None;
         }
 
+        switch (actor.CombatantId)
+        {
+            case DemoCombatantId.An:
+                return DemoSpecialCommand.SpiritPossession;
+            case DemoCombatantId.Mac:
+                return DemoSpecialCommand.Omniscience;
+            case DemoCombatantId.XIII:
+                return DemoSpecialCommand.EgoReborn;
+        }
+
+        if (string.IsNullOrEmpty(actor.characterName))
+        {
+            return DemoSpecialCommand.None;
+        }
+
+        // Compatibility only for old scenes that have not yet serialized stable IDs.
         string normalizedName = actor.characterName.ToLowerInvariant();
         if (normalizedName.Contains("an"))
         {
@@ -737,11 +774,14 @@ public class BattleManager : MonoBehaviour
 
     private CharacterInteraction FindLivingBoss()
     {
-        return enemies.Find(enemy =>
-            enemy != null &&
+        if (bachMenhQuan != null && !bachMenhQuan.isDead)
+        {
+            return bachMenhQuan;
+        }
+
+        return enemies.Find(enemy => enemy != null &&
             !enemy.isDead &&
-            !string.IsNullOrEmpty(enemy.characterName) &&
-            enemy.characterName.ToLowerInvariant().Contains("boss"));
+            enemy.CombatantId == DemoCombatantId.BachMenhQuan);
     }
 
     public void GetSpecialPresentation(

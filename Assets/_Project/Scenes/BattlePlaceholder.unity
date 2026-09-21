@@ -171,6 +171,7 @@ MonoBehaviour:
   isAlly: 1
   isSelected: 0
   characterName: XIII
+  demoCombatantId: 1
   maxHP: 2200
   currentHP: 2200
   maxLimit: 2
@@ -309,7 +310,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterInteraction
   isAlly: 0
   isSelected: 0
-  characterName: Franken Boss
+  characterName: Bách Mệnh Quan
+  demoCombatantId: 4
   maxHP: 10000
   currentHP: 10000
   maxLimit: 10
@@ -719,6 +721,7 @@ MonoBehaviour:
   isAlly: 1
   isSelected: 0
   characterName: An
+  demoCombatantId: 3
   maxHP: 1200
   currentHP: 1200
   maxLimit: 2
@@ -1350,6 +1353,7 @@ MonoBehaviour:
   isAlly: 1
   isSelected: 0
   characterName: Mac
+  demoCombatantId: 2
   maxHP: 1650
   currentHP: 1650
   maxLimit: 2
@@ -1488,20 +1492,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterInteraction
   isAlly: 0
   isSelected: 0
-  characterName: Minion B
-  maxHP: 450
-  currentHP: 450
-  maxLimit: 3
-  currentLimit: 3
+  characterName: Hộc Tử Thi Phải
+  demoCombatantId: 6
+  maxHP: 1500
+  currentHP: 1500
+  maxLimit: 4
+  currentLimit: 4
   isDazed: 0
   isDead: 0
-  baseDEF: 0
+  baseDEF: 8
   currentShield: 0
-  baseATK: 18
-  baseBreakATK: 1
+  baseATK: 25
+  baseBreakATK: 2
   baseCritRate: 0
   baseCritDMG: 1.5
-  element: Physical
+  element: Mental
   hasWeakpoint: 0
   defShred: 0
   atkBuff: 0
@@ -2006,16 +2011,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterInteraction
   isAlly: 0
   isSelected: 0
-  characterName: Minion A
-  maxHP: 450
-  currentHP: 450
-  maxLimit: 3
-  currentLimit: 3
+  characterName: Hộc Tử Thi Trái
+  demoCombatantId: 5
+  maxHP: 1500
+  currentHP: 1500
+  maxLimit: 4
+  currentLimit: 4
   isDazed: 0
   isDead: 0
-  baseDEF: 0
+  baseDEF: 8
   currentShield: 0
-  baseATK: 18
+  baseATK: 20
   baseBreakATK: 1
   baseCritRate: 0
   baseCritDMG: 1.5

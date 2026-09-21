@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using FrankenXIII.Combat.Domain;
 
 public class CharacterInteraction : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class CharacterInteraction : MonoBehaviour
     public bool isSelected = false;
 
     public string characterName = "Unknown";
+    [SerializeField] private DemoCombatantId demoCombatantId = DemoCombatantId.None;
     public int maxHP = 100;
     public int currentHP = 100;
     public int maxLimit = 2;
@@ -34,6 +36,8 @@ public class CharacterInteraction : MonoBehaviour
     public System.Collections.Generic.List<SkillData> activeSkills = new System.Collections.Generic.List<SkillData>();
 
     private GameObject selectionCircle;
+
+    public DemoCombatantId CombatantId => demoCombatantId;
 
     public Vector3 originalPosition;
     public bool isPosInit = false;
@@ -266,32 +270,25 @@ public class CharacterInteraction : MonoBehaviour
         // Bổ sung Limit Bar (Chỉ dành cho Enemy/Boss)
         if (!isAlly)
         {
-            GameObject limitContainer = new GameObject("LimitContainer");
-            limitContainer.transform.SetParent(canvasObj.transform, false);
-            RectTransform limitRect = limitContainer.AddComponent<RectTransform>();
+            GameObject limitContainerObject = new GameObject("LimitContainer");
+            limitContainerObject.transform.SetParent(canvasObj.transform, false);
+            RectTransform limitRect = limitContainerObject.AddComponent<RectTransform>();
             limitRect.anchorMin = new Vector2(0, -0.5f);
             limitRect.anchorMax = new Vector2(1, -0.1f);
             limitRect.offsetMin = Vector2.zero;
             limitRect.offsetMax = Vector2.zero;
 
-            UnityEngine.UI.HorizontalLayoutGroup hLayout = limitContainer.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+            UnityEngine.UI.HorizontalLayoutGroup hLayout = limitContainerObject.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
             hLayout.spacing = 0.02f;
             hLayout.childControlWidth = true;
             hLayout.childControlHeight = true;
-
-            miniLimitSegments = new UnityEngine.UI.Image[maxLimit];
-            for (int i = 0; i < maxLimit; i++)
-            {
-                GameObject segObj = new GameObject("LimitSegment");
-                segObj.transform.SetParent(limitContainer.transform, false);
-                UnityEngine.UI.Image segImg = segObj.AddComponent<UnityEngine.UI.Image>();
-                segImg.color = new Color(0.6f, 0.2f, 0.8f, 1f); // Purple
-                miniLimitSegments[i] = segImg;
-            }
+            miniLimitContainer = limitContainerObject.transform;
+            RebuildMiniLimitSegments();
         }
     }
 
     private UnityEngine.UI.Image[] miniLimitSegments;
+    private Transform miniLimitContainer;
 
     private Coroutine hpRoutine;
 
@@ -311,7 +308,7 @@ public class CharacterInteraction : MonoBehaviour
     public void UpdateMiniLimit()
     {
         if (miniLimitSegments == null) return;
-        for (int i = 0; i < maxLimit; i++)
+        for (int i = 0; i < miniLimitSegments.Length; i++)
         {
             if (i < currentLimit)
             {
@@ -326,6 +323,44 @@ public class CharacterInteraction : MonoBehaviour
         if (!isAlly && BattleUIManager.Instance != null)
         {
             BattleUIManager.Instance.UpdateLimitHUD(this);
+        }
+    }
+
+    public void ConfigureCombatantId(DemoCombatantId combatantId)
+    {
+        demoCombatantId = combatantId;
+    }
+
+    public void SetLimitCapacity(int capacity, bool refill)
+    {
+        maxLimit = Mathf.Max(1, capacity);
+        currentLimit = refill ? maxLimit : Mathf.Clamp(currentLimit, 0, maxLimit);
+        RebuildMiniLimitSegments();
+        UpdateMiniLimit();
+    }
+
+    private void RebuildMiniLimitSegments()
+    {
+        if (miniLimitContainer == null)
+        {
+            return;
+        }
+
+        for (int i = miniLimitContainer.childCount - 1; i >= 0; i--)
+        {
+            Destroy(miniLimitContainer.GetChild(i).gameObject);
+        }
+
+        miniLimitSegments = new UnityEngine.UI.Image[maxLimit];
+        for (int i = 0; i < maxLimit; i++)
+        {
+            GameObject segmentObject = new GameObject("LimitSegment_" + i);
+            segmentObject.transform.SetParent(miniLimitContainer, false);
+            UnityEngine.UI.Image segmentImage = segmentObject.AddComponent<UnityEngine.UI.Image>();
+            segmentImage.color = i < currentLimit
+                ? new Color(0.6f, 0.2f, 0.8f, 1f)
+                : new Color(0.2f, 0.1f, 0.3f, 0.8f);
+            miniLimitSegments[i] = segmentImage;
         }
     }
 
@@ -582,5 +617,26 @@ public class CharacterInteraction : MonoBehaviour
         {
             miniHp.gameObject.SetActive(false);
         }
+    }
+
+    public void RecoverFromTemporaryCollapse(int recoveredHp)
+    {
+        isDead = false;
+        isDazed = false;
+        currentHP = Mathf.Clamp(recoveredHp, 1, maxHP);
+        currentLimit = maxLimit;
+
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.enabled = true;
+
+        Transform visual = transform.Find("Visual");
+        if (visual != null) visual.gameObject.SetActive(true);
+
+        Transform miniHp = transform.Find("MiniHPCanvas");
+        if (miniHp != null) miniHp.gameObject.SetActive(true);
+
+        PlayAnimation("idle");
+        UpdateMiniHP();
+        UpdateMiniLimit();
     }
 }

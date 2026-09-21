@@ -4,7 +4,7 @@
 
 **Repository:** `D:\Work\UNity\git\xiii\xiii`
 
-**Baseline revision:** `499f023` (`main`); the current Instant Special Task 3 checkpoint is uncommitted.
+**Baseline revision:** `c85b9d1` (`main`); Instant Special Task 3 and UI updates are committed.
 
 **Unity version:** `6000.5.8f1`
 
@@ -82,12 +82,12 @@ Status terms:
 | Boss multi-entity phases | MISSING | The scene has one boss and two support enemies, but no phase contract, 600 feedback damage, drawer protection, or top-down stun implementation. |
 | Combat consumable contract | PARTIAL | Two demo items are created at runtime; the four locked items and per-item-type round restriction are not implemented. |
 | Narrative / exploration / Playable Knowledge | MISSING | No five-area demo flow, dialogue, investigation, puzzle, world-state, or story-to-combat integration. |
-| Automated tests | VERIFIED FOR CURRENT EDITMODE DOMAIN SCOPE | Unity Test Runner on `6000.5.8f1` passed 32/32 EditMode cases, fail 0, skip 0, inconclusive 0, against the uncommitted working tree based on `499f023` on 2026-09-21. Artifact: `C:\Users\idola\AppData\Local\Temp\FrankenXIII-Task3-InstantSpecials-Validation\EditMode-results-retry.xml`. This covers Beat, Soul, reward, and Special rules; it is not PlayMode integration acceptance. |
+| Automated tests | VERIFIED FOR CURRENT EDITMODE DOMAIN SCOPE | Unity Test Runner on `6000.5.8f1` passed 32/32 EditMode cases, fail 0, skip 0, inconclusive 0, against the uncommitted working tree based on `c85b9d1` on 2026-09-21. Artifact: `C:\Users\idola\AppData\Local\Temp\FrankenXIII-Task3-InstantSpecials-Validation\EditMode-results-retry.xml`. This covers Beat, Soul, reward, and Special rules; it is not PlayMode integration acceptance. |
 | Visual/runtime acceptance | UNVERIFIED | No recorded full playthrough, Special interaction smoke test, or multi-aspect UI acceptance run is attached to this revision. The text Weakpoint marker must not be reported as the authored reticle VFX. |
 
 ## 5. Verified repository facts
 
-- Git branch `main` is based on `499f023`, synchronized with `origin/main`; the current Task 3 checkpoint remains uncommitted.
+- Git branch `main` is based on `c85b9d1`, synchronized with `origin/main`.
 - A fresh 2026-09-21 asset metadata scan found 0 missing `.meta`, 0 orphan `.meta`, and 0 duplicate GUID groups across 357 GUID-bearing metadata files.
 - The 2026-09-21 player build completed with 0 C# errors and 29 unique compiler/analyzer warnings. The main categories are obsolete Unity object-search APIs, obsolete sprite/editor APIs, and unsupported/missing serialization metadata.
 - The current Windows build directory is approximately 234.4 MiB. It is an external temporary artifact, not a versioned release package.
