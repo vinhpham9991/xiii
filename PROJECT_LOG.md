@@ -134,3 +134,12 @@ Nguyên mẫu chiến đấu hiện đã ở mức build-được, hệ thống 
   6. Sửa lỗi chính tả, đổi tên item thành "Hồn Hoàn" và sửa UI tag thành `Soul x1`.
   7. Thay đổi quyền truy cập `GetSpecialCommand` sang public để giải quyết lỗi biên dịch CS0122.
 - **Trạng thái**: Hoàn tất.
+
+### 19. Nhật ký thao tác chi tiết
+- **Ngày giờ**: 2026-09-22 01:03:00
+- **Task được yêu cầu**: Bóc tách logic và viết Unit Test cho Damage Pipeline.
+- **Cách thức thực hiện**: 
+  1. Refactor hàm `CalculateDamage` từ `BattleManager` sang `FrankenXIII.Combat.Domain.DamageCalculatorRules` (Pure C#).
+  2. Tạo các struct trung gian `CombatStats`, `SkillImpact` để truyền dữ liệu.
+  3. Viết 6 test cases trong `DamageCalculatorRulesTests.cs` (EditMode) bao phủ logic trừ giáp, hệ, bạo kích, phá bền, và khiên.
+- **Trạng thái**: Hoàn tất.

@@ -102,7 +102,8 @@ Status terms:
 | Special menu labels/interactable state, battle messages, text Weakpoint status | [`BattleUIManager.cs`](Assets/_Project/Scripts/Combat/BattleUIManager.cs) | Requires PlayMode/UI acceptance; no integration test currently covers it |
 | Toàn Thức click-target filtering | [`CharacterInteraction.cs`](Assets/_Project/Scripts/Interaction/CharacterInteraction.cs) | Requires PlayMode mouse/keyboard acceptance |
 | Beat/Soul/reward rules | [`Combat/Domain`](Assets/_Project/Scripts/Combat/Domain) | 6 Beat + 5 Soul + 7 reward EditMode cases |
-| Instant Special pure rules | [`SpecialCommandRules.cs`](Assets/_Project/Scripts/Combat/Domain/SpecialCommandRules.cs) | 14 EditMode cases; combined current suite is 32/32 |
+| Instant Special pure rules | [`SpecialCommandRules.cs`](Assets/_Project/Scripts/Combat/Domain/SpecialCommandRules.cs) | 14 EditMode cases |
+| Damage Pipeline rules | [`DamageCalculatorRules.cs`](Assets/_Project/Scripts/Combat/Domain/DamageCalculatorRules.cs) | 6 EditMode cases; combined current suite is 38/38 |
 
 ## 7. Rules for future status updates
 

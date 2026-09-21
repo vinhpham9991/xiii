@@ -178,6 +178,9 @@ MonoBehaviour:
   currentLimit: 2
   isDazed: 0
   isDead: 0
+  isProtected: 0
+  hpGateThreshold: 0
+  isPoisoned: 0
   baseDEF: 15
   currentShield: 0
   baseATK: 40
@@ -318,6 +321,9 @@ MonoBehaviour:
   currentLimit: 10
   isDazed: 0
   isDead: 0
+  isProtected: 0
+  hpGateThreshold: 0
+  isPoisoned: 0
   baseDEF: 12
   currentShield: 0
   baseATK: 35
@@ -728,6 +734,9 @@ MonoBehaviour:
   currentLimit: 2
   isDazed: 0
   isDead: 0
+  isProtected: 0
+  hpGateThreshold: 0
+  isPoisoned: 0
   baseDEF: 6
   currentShield: 0
   baseATK: 22
@@ -1360,6 +1369,9 @@ MonoBehaviour:
   currentLimit: 2
   isDazed: 0
   isDead: 0
+  isProtected: 0
+  hpGateThreshold: 0
+  isPoisoned: 0
   baseDEF: 10
   currentShield: 0
   baseATK: 28
@@ -1500,6 +1512,9 @@ MonoBehaviour:
   currentLimit: 4
   isDazed: 0
   isDead: 0
+  isProtected: 0
+  hpGateThreshold: 0
+  isPoisoned: 0
   baseDEF: 8
   currentShield: 0
   baseATK: 25
@@ -2019,6 +2034,9 @@ MonoBehaviour:
   currentLimit: 4
   isDazed: 0
   isDead: 0
+  isProtected: 0
+  hpGateThreshold: 0
+  isPoisoned: 0
   baseDEF: 8
   currentShield: 0
   baseATK: 20
@@ -2734,12 +2752,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2035853253afc564c8fde86a503c11a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BattleManager
+  spiritPossessionVFXPrefab: {fileID: 0}
+  omniscienceReticlePrefab: {fileID: 0}
+  egoRebornCutinPrefab: {fileID: 0}
   state: 0
   pendingAction: 0
   pendingItem: {fileID: 0}
   currentHighlight: {fileID: 0}
   allies: []
   enemies: []
+  pendingBonusSouls: 0
   playerPlan: []
   enemyPlan: []
   currentActor: {fileID: 0}

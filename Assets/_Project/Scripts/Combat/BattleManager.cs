@@ -1417,77 +1417,70 @@ public class BattleManager : MonoBehaviour
         out bool isCrit,
         float empowerMultiplier = 1f)
     {
-        isCrit = false;
-        limitDamage = 0;
-
-        // TẦNG 1: SỨC TẤN CÔNG THỰC TẾ (ATK_eff)
-        float atkEff = actor.baseATK * (1f + actor.atkBuff);
-
-        // TẦNG 2: SÁT THƯƠNG ĐẦU RA CƠ BẢN (DMG_base)
-        float skillMultiplier = (skill != null) ? skill.powerMultiplier : 1.0f;
-        float dmgBase = atkEff * skillMultiplier * empowerMultiplier;
-
-        // TẦNG 3: KHẤU TRỪ PHÒNG NGỰ CÓ BÀO MÒN (MITIGATED DMG)
-        float defEff = Mathf.Max(0, target.baseDEF * (1f - target.defShred));
-        float minDmg = Mathf.Max(1, Mathf.Floor(dmgBase * 0.10f));
-        float dmgMitigated = Mathf.Max(minDmg, dmgBase - defEff);
-
-        // TẦNG 4: HỆ SỐ KHẮC CHẾ & ĐIỂM YẾU
-        float weakMult = 1.0f;
-        if (skill != null && skill.isMental && target.element == "Mental") weakMult += 0.4f; // Ví dụ
-        if (target.hasWeakpoint) weakMult += 0.4f;
-
-        // TẦNG 5: PHÂN ĐỊNH BẠO KÍCH (CRIT)
-        float critRateFinal = actor.baseCritRate + ((skill != null) ? skill.extraCritRate : 0f);
-        if (target.isDazed)
+        FrankenXIII.Combat.Domain.CombatStats attackerStats = new FrankenXIII.Combat.Domain.CombatStats
         {
-            isCrit = true;
-        }
-        else
+            BaseATK = actor.baseATK,
+            AtkBuff = actor.atkBuff,
+            BaseDEF = actor.baseDEF,
+            DefShred = actor.defShred,
+            BaseBreakATK = actor.baseBreakATK,
+            BreakAtkBuff = actor.breakAtkBuff,
+            BaseCritRate = actor.baseCritRate,
+            BaseCritDMG = actor.baseCritDMG,
+            CurrentShield = actor.currentShield,
+            HasWeakpoint = actor.hasWeakpoint,
+            IsDazed = actor.isDazed,
+            Element = actor.element
+        };
+
+        FrankenXIII.Combat.Domain.CombatStats defenderStats = new FrankenXIII.Combat.Domain.CombatStats
         {
-            isCrit = Random.value < critRateFinal;
-        }
+            BaseATK = target.baseATK,
+            AtkBuff = target.atkBuff,
+            BaseDEF = target.baseDEF,
+            DefShred = target.defShred,
+            BaseBreakATK = target.baseBreakATK,
+            BreakAtkBuff = target.breakAtkBuff,
+            BaseCritRate = target.baseCritRate,
+            BaseCritDMG = target.baseCritDMG,
+            CurrentShield = target.currentShield,
+            HasWeakpoint = target.hasWeakpoint,
+            IsDazed = target.isDazed,
+            Element = target.element
+        };
 
-        float critMult = isCrit ? actor.baseCritDMG : 1.0f;
-        float dmgRawFinal = Mathf.Floor(dmgMitigated * weakMult * critMult);
-
-        // TẦNG 6: SÁT THƯƠNG PHÁ BỀN / LIMIT BREAK
-        int breakBase = 0;
-        if (skill != null)
+        FrankenXIII.Combat.Domain.SkillImpact skillImpact = new FrankenXIII.Combat.Domain.SkillImpact
         {
-            // Chỉ Kỹ năng (SKILL) mới gây sát thương phá bền theo yêu cầu
-            breakBase = actor.baseBreakATK + actor.breakAtkBuff + skill.baseBreakLimit;
-        }
+            IsSkill = (skill != null),
+            PowerMultiplier = skill != null ? skill.powerMultiplier : 1.0f,
+            BaseBreakLimit = skill != null ? skill.baseBreakLimit : 0,
+            ExtraCritRate = skill != null ? skill.extraCritRate : 0f,
+            IsMental = skill != null ? skill.isMental : false
+        };
 
-        if (breakBase > 0)
-        {
-            limitDamage = Mathf.FloorToInt(breakBase * empowerMultiplier * (target.hasWeakpoint ? 2f : 1f));
-        }
+        float randomCritValue = Random.value;
 
-        // TẦNG 7: SHIELD (Đã tính trong Hậu Kỳ hoặc xử lý ở đây nếu target có Shield)
-        // Hiện tại target là Enemy, chưa có logic Shield. 
-        if (target.currentShield > 0)
-        {
-            if (target.currentShield >= dmgRawFinal)
-            {
-                target.currentShield -= Mathf.FloorToInt(dmgRawFinal);
-                dmgRawFinal = 0;
-            }
-            else
-            {
-                dmgRawFinal -= target.currentShield;
-                target.currentShield = 0;
-            }
-        }
+        FrankenXIII.Combat.Domain.DamageCalculatorRules.CalculateDamage(
+            attackerStats,
+            defenderStats,
+            skillImpact,
+            empowerMultiplier,
+            randomCritValue,
+            out int finalDamage,
+            out limitDamage,
+            out isCrit,
+            out int remainingShield
+        );
 
-        // Debuffs from skill
+        target.currentShield = remainingShield;
+
+        // Apply skill debuffs if any
         if (skill != null && skill.category == SkillCategory.DEBUFF)
         {
             if (skill.defShred > 0) target.defShred = skill.defShred;
-            // Bột lân tinh không gây damage, trả về damage đã tính (28 DMG)
         }
 
-        return Mathf.FloorToInt(dmgRawFinal);
+        return finalDamage;
     }
 
     IEnumerator ExecuteAttack(CharacterInteraction actor, CharacterInteraction target, ActionType actionType = ActionType.ATTACK, SkillData skill = null, bool isFirst = true, bool isLast = true, CharacterInteraction prevTarget = null)
