@@ -110,3 +110,27 @@ Nguyên mẫu chiến đấu hiện đã ở mức build-được, hệ thống 
   1. Phát hiện t�nh năng mặc định \childForceExpandWidth = true\ của \HorizontalLayoutGroup\ gây ra tình trạng chia đ� u khoảng trống dư thừa cho các Node (dòng Enemy có ít Node hơn nên Avatar và InfoCol bị kéo dãn ra nhi� u hơn so với dòng Boss).
   2. Thêm thuộc t�nh \hLayout.childForceExpandWidth = false\ vào hàm \CreateEnemyPlanHud\. Thay đổi này ép \HorizontalLayoutGroup\ phải tuân thủ ch�nh xác k�ch thước 32x32 của Avatar và 140px của HP Bar, đảm bảo căn l�  chuẩn xác 100%.
 - **Trạng thái**: Hoàn tất.
+
+### 17. Nhật ký thao tác chi tiết
+- **Ngày giờ**: 2026-09-22 00:03:27
+- **Task được yêu cầu**: Thực thi Implementation Plan Đợt 1 (F2 Config UI, Item System, Boss Phase & HP Gating, Data Stability, VFX Hooks).
+- **Cách thức thực hiện**: 
+  1. Tạo `DebugConfigUI.cs` gọi bằng OnGUI để chỉnh sửa nhanh chỉ số nhân vật/Boss và ấn F2 (có zoom x1.5 và background tối để dễ nhìn).
+  2. Bổ sung `SoulRestore` và `CurePoison` vào enum ItemType. Tạo 4 loại Item (Health Potion, Power Elixir, Soul+1, Antidote) x9 và gỡ bỏ giới hạn số lượng dùng trong round.
+  3. Áp dụng quy tắc miền (Domain rules) từ `BossEncounterRules` vào `BattleManager.cs` để quản lý chuyển Phase (Phase 1, 2, 3 dựa trên HP threshold) và cờ Immune (miễn nhiễm) khi Hộc Tử Thi còn sống.
+  4. Thay thế mọi logic kiểm tra mục tiêu bằng chuỗi (`characterName.Contains`) thành so sánh ID hằng số (`CombatantId`) để đảm bảo code ổn định lâu dài.
+  5. Cắm các cổng VFX (Prefabs) cho kỹ năng Nhập Hồn, Toàn Thức (Reticle tự động bám), Bản Ngã Tái Sinh (Cut-in).
+- **Trạng thái**: Hoàn tất.
+
+### 18. Nhật ký thao tác chi tiết
+- **Ngày giờ**: 2026-09-22 00:52:37
+- **Task được yêu cầu**: Redesign UI Sub Menu (Skill & Item) và tối ưu hóa trải nghiệm người dùng.
+- **Cách thức thực hiện**: 
+  1. Thêm nút Close [X] vào Debug Config UI (F2) và thêm Text hiển thị "Config (F2)" cạnh nút Help trên HUD gốc.
+  2. Xóa bỏ nút SPECIAL độc lập ngoài menu chính.
+  3. Bổ sung trường `description` cho `SkillData` và thiết lập dữ liệu mô tả cho 9 kỹ năng của 3 nhân vật (Nhập Hồn, Toàn Thức, Bản Ngã Tái Sinh, ...).
+  4. Viết lại hàm `CreateSkillButton` và `CreateItemButton` trong `BattleUIManager.cs` để sử dụng LayoutElement (minHeight = 80) và Rich Text nhằm hiển thị nút bấm với 3 dòng thông tin: Tên, Mô tả chi tiết, Số liệu Tiêu hao / Số lượng.
+  5. Tích hợp lệnh Special (Tuyệt Kỹ) vào cuối danh sách của bảng Skill. Xử lý đổi màu linh hoạt cho Cooldown và điều kiện Active.
+  6. Sửa lỗi chính tả, đổi tên item thành "Hồn Hoàn" và sửa UI tag thành `Soul x1`.
+  7. Thay đổi quyền truy cập `GetSpecialCommand` sang public để giải quyết lỗi biên dịch CS0122.
+- **Trạng thái**: Hoàn tất.

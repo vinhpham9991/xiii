@@ -436,7 +436,8 @@ public class BattleUIManager : MonoBehaviour
         CreateButton("ATTACK", ActionType.ATTACK, actionMenu.transform);
         CreateButton("SKILL", ActionType.SKILL, actionMenu.transform);
         CreateButton("ITEM", ActionType.ITEM, actionMenu.transform);
-        CreateButton("SPECIAL", ActionType.SPECIAL, actionMenu.transform);
+        // SPECIAL now moved to Skill Menu
+        // CreateButton("SPECIAL", ActionType.SPECIAL, actionMenu.transform);
 
         actionMenu.SetActive(false);
 
@@ -452,7 +453,7 @@ public class BattleUIManager : MonoBehaviour
         skillMenuRect.anchorMax = new Vector2(0, 0);
         skillMenuRect.pivot = new Vector2(0, 0.5f);
         skillMenuRect.anchoredPosition = new Vector2(-1000, -1000);
-        skillMenuRect.sizeDelta = new Vector2(200, 200);
+        skillMenuRect.sizeDelta = new Vector2(280, 400);
 
         VerticalLayoutGroup skillLayout = skillMenu.AddComponent<VerticalLayoutGroup>();
         skillLayout.padding = new RectOffset(10, 10, 10, 10);
@@ -475,7 +476,7 @@ public class BattleUIManager : MonoBehaviour
         itemMenuRect.anchorMax = new Vector2(0, 0);
         itemMenuRect.pivot = new Vector2(0, 0.5f);
         itemMenuRect.anchoredPosition = new Vector2(-1000, -1000);
-        itemMenuRect.sizeDelta = new Vector2(200, 200);
+        itemMenuRect.sizeDelta = new Vector2(280, 400);
 
         VerticalLayoutGroup itemLayout = itemMenu.AddComponent<VerticalLayoutGroup>();
         itemLayout.padding = new RectOffset(10, 10, 10, 10);
@@ -1294,6 +1295,7 @@ public class BattleUIManager : MonoBehaviour
                     {
                         CreateSkillButton(skill, skillMenu.transform);
                     }
+                    CreateSpecialButton(actor, skillMenu.transform);
                 }
                 
                 // Nút Cancel để quay lại Action Menu
@@ -1315,6 +1317,10 @@ public class BattleUIManager : MonoBehaviour
     {
         GameObject btnObj = new GameObject("Btn_" + skill.skillName);
         btnObj.transform.SetParent(parent, false);
+        
+        UnityEngine.UI.LayoutElement le = btnObj.AddComponent<UnityEngine.UI.LayoutElement>();
+        le.minHeight = 80f;
+
         Image btnImg = btnObj.AddComponent<Image>();
         Button btn = btnObj.AddComponent<Button>();
 
@@ -1344,7 +1350,96 @@ public class BattleUIManager : MonoBehaviour
         txtObj.transform.SetParent(btnObj.transform, false);
         Text txt = txtObj.AddComponent<Text>();
         txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        txt.text = skill.skillName + " (Cost: " + skill.soulCost + ")";
+        txt.supportRichText = true;
+        txt.text = $"<b>{skill.skillName}</b>\n<color=#cccccc><size=12>{skill.description}</size></color>\n<color=#55aaff>Soul x{skill.soulCost}</color>";
+        txt.alignment = TextAnchor.MiddleCenter;
+        txt.fontSize = 16;
+        txt.color = Color.white;
+
+        RectTransform txtRect = txtObj.GetComponent<RectTransform>();
+        txtRect.anchorMin = Vector2.zero; txtRect.anchorMax = Vector2.one;
+        txtRect.offsetMin = Vector2.zero; txtRect.offsetMax = Vector2.zero;
+    }
+
+    private void CreateSpecialButton(CharacterInteraction actor, Transform parent)
+    {
+        if (BattleManager.Instance == null) return;
+
+        BattleManager.Instance.GetSpecialPresentation(actor, out string label, out bool isAvailable);
+        FrankenXIII.Combat.Domain.DemoSpecialCommand command = BattleManager.Instance.GetSpecialCommand(actor);
+        if (command == FrankenXIII.Combat.Domain.DemoSpecialCommand.None) return;
+
+        GameObject btnObj = new GameObject("Btn_Special");
+        btnObj.transform.SetParent(parent, false);
+        
+        UnityEngine.UI.LayoutElement le = btnObj.AddComponent<UnityEngine.UI.LayoutElement>();
+        le.minHeight = 80f;
+
+        Image btnImg = btnObj.AddComponent<Image>();
+        Button btn = btnObj.AddComponent<Button>();
+
+        btnImg.color = Color.white;
+        ColorBlock cb = btn.colors;
+        if (isAvailable)
+        {
+            cb.normalColor = new Color(0.6f, 0.2f, 0.2f, 1f);
+            cb.highlightedColor = new Color(0.8f, 0.3f, 0.3f, 1f);
+            cb.selectedColor = new Color(0.8f, 0.3f, 0.3f, 1f);
+            cb.pressedColor = new Color(0.9f, 0.4f, 0.4f, 1f);
+            btn.onClick.AddListener(() => BattleManager.Instance.OnSpecialSelected());
+        }
+        else
+        {
+            cb.normalColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+            cb.disabledColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+            btn.interactable = false;
+        }
+        btn.colors = cb;
+
+        string specialName = "SPECIAL";
+        string specialDesc = "";
+        string costText = "";
+        
+        if (command == FrankenXIII.Combat.Domain.DemoSpecialCommand.SpiritPossession)
+        {
+            specialName = "Nhập Hồn";
+            specialDesc = "Cường hoá Kỹ năng tiếp theo (x2 Tác dụng).";
+        }
+        else if (command == FrankenXIII.Combat.Domain.DemoSpecialCommand.Omniscience)
+        {
+            specialName = "Toàn Thức";
+            specialDesc = "Tạo Điểm yếu (Weakpoint) cho mục tiêu chỉ định.";
+        }
+        else if (command == FrankenXIII.Combat.Domain.DemoSpecialCommand.EgoReborn)
+        {
+            specialName = "Bản Ngã Tái Sinh";
+            specialDesc = "Kết liễu Boss khi HP <= 20%.";
+        }
+
+        int cost = FrankenXIII.Combat.Domain.SpecialCommandRules.GetSoulCost(command);
+        costText = $"Soul x{cost}";
+        
+        // Extract cooldown from label if present
+        if (label.Contains("CD"))
+        {
+            int cdIndex = label.IndexOf("CD");
+            string cdValue = label.Substring(cdIndex);
+            costText += $" | <color=#ffaaaa>{cdValue}</color>";
+        }
+
+        if (command == FrankenXIII.Combat.Domain.DemoSpecialCommand.EgoReborn)
+        {
+            if (label.Contains("ACTIVE")) costText = "<color=#aaffaa>Ä Ãƒ KÃ CH HOáº T</color>";
+            else if (label.Contains("LOCKED")) costText = "<color=#ffaaaa>CHÆ¯A Má»ž KHÃ“A</color>";
+            else costText = "<color=#ffffaa>CÃ“ THá»‚ KÃ CH HOáº T</color>";
+        }
+
+        GameObject txtObj = new GameObject("Text");
+        txtObj.transform.SetParent(btnObj.transform, false);
+        Text txt = txtObj.AddComponent<Text>();
+        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        txt.supportRichText = true;
+        txt.text = $"<b>{specialName}</b>\n<color=#cccccc><size=12>{specialDesc}</size></color>\n<color=#ffaa55>{costText}</color>";
         txt.alignment = TextAnchor.MiddleCenter;
         txt.fontSize = 16;
         txt.color = Color.white;
@@ -1405,11 +1500,15 @@ public class BattleUIManager : MonoBehaviour
     {
         GameObject btnObj = new GameObject("Btn_" + item.itemName);
         btnObj.transform.SetParent(parent, false);
-        Image btnImg = btnObj.AddComponent<Image>();
-        Button btn = btnObj.AddComponent<Button>();
+        
+        UnityEngine.UI.LayoutElement le = btnObj.AddComponent<UnityEngine.UI.LayoutElement>();
+        le.minHeight = 80f;
+
+        UnityEngine.UI.Image btnImg = btnObj.AddComponent<UnityEngine.UI.Image>();
+        UnityEngine.UI.Button btn = btnObj.AddComponent<UnityEngine.UI.Button>();
 
         btnImg.color = Color.white;
-        ColorBlock cb = btn.colors;
+        UnityEngine.UI.ColorBlock cb = btn.colors;
         if (amount > 0)
         {
             cb.normalColor = new Color(0.2f, 0.5f, 0.3f, 1f);
@@ -1428,9 +1527,10 @@ public class BattleUIManager : MonoBehaviour
 
         GameObject txtObj = new GameObject("Text");
         txtObj.transform.SetParent(btnObj.transform, false);
-        Text txt = txtObj.AddComponent<Text>();
+        UnityEngine.UI.Text txt = txtObj.AddComponent<UnityEngine.UI.Text>();
         txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        txt.text = item.itemName + " (x" + amount + ")";
+        txt.supportRichText = true;
+        txt.text = $"<b>{item.itemName}</b>\n<color=#cccccc><size=12>{item.description}</size></color>\n<color=#aaffaa>Số lượng: x{amount}</color>";
         txt.alignment = TextAnchor.MiddleCenter;
         txt.fontSize = 16;
         txt.color = Color.white;

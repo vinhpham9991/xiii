@@ -10,6 +10,7 @@ public enum SkillCategory
 public class SkillData
 {
     public string skillName;
+    public string description;
     public SkillCategory category;
     public float powerMultiplier; // e.g. 1.4 for 140%
     public int baseBreakLimit;

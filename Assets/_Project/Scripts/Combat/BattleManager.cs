@@ -10,6 +10,13 @@ public class BattleManager : MonoBehaviour
 {
     public static BattleManager Instance;
 
+    [Header("Special Presentation")]
+    public GameObject spiritPossessionVFXPrefab;
+    public GameObject omniscienceReticlePrefab;
+    public GameObject egoRebornCutinPrefab;
+    
+    private GameObject currentReticle;
+
     public BattleState state;
     public ActionType pendingAction;
     public SkillData pendingSkill;
@@ -23,6 +30,8 @@ public class BattleManager : MonoBehaviour
     public List<CharacterInteraction> allies = new List<CharacterInteraction>();
     public List<CharacterInteraction> enemies = new List<CharacterInteraction>();
     
+    public int pendingBonusSouls = 0;
+
     // Plans
     [SerializeField] private List<BeatPlan> playerPlan = new List<BeatPlan>();
     [SerializeField] private List<BeatPlan> enemyPlan = new List<BeatPlan>();
@@ -63,6 +72,12 @@ public class BattleManager : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        
+        // Attach Debug UI
+        if (gameObject.GetComponent<DebugConfigUI>() == null)
+        {
+            gameObject.AddComponent<DebugConfigUI>();
+        }
         
         // Cài đặt BGM
         AudioSource bgmSource = gameObject.AddComponent<AudioSource>();
@@ -131,20 +146,35 @@ public class BattleManager : MonoBehaviour
             BattleUIManager.Instance.UpdateHP(c);
         }
 
-        // Demo items
+        // Demo items (4 Items, Quantity 9)
+        inventory.Clear();
+
         ItemData potion = ScriptableObject.CreateInstance<ItemData>();
         potion.itemName = "Health Potion";
         potion.itemType = ItemType.HEAL;
         potion.healAmount = 100;
         potion.description = "Hồi 100 HP";
-        inventory.Add(potion, 3);
+        inventory.Add(potion, 9);
 
         ItemData buffPotion = ScriptableObject.CreateInstance<ItemData>();
         buffPotion.itemName = "Power Elixir";
         buffPotion.itemType = ItemType.BUFF_STATS;
         buffPotion.atkBuff = 0.5f; // Buff 50% sức tấn công
         buffPotion.description = "Tăng 50% Sức Tấn Công";
-        inventory.Add(buffPotion, 3);
+        inventory.Add(buffPotion, 9);
+
+        ItemData soulRestore = ScriptableObject.CreateInstance<ItemData>();
+        soulRestore.itemName = "Hồn Hoàn";
+        soulRestore.itemType = ItemType.RESTORE_SOUL;
+        soulRestore.soulRestoreAmount = 1;
+        soulRestore.description = "Nhận +1 Soul vào lượt sau";
+        inventory.Add(soulRestore, 9);
+
+        ItemData antidote = ScriptableObject.CreateInstance<ItemData>();
+        antidote.itemName = "Antidote";
+        antidote.itemType = ItemType.CURE_POISON;
+        antidote.description = "Giải trừ trạng thái Độc";
+        inventory.Add(antidote, 9);
 
         StartCoroutine(SetupBattle());
     }
@@ -178,6 +208,13 @@ public class BattleManager : MonoBehaviour
 
     void StartPlayerTurn()
     {
+        if (pendingBonusSouls > 0)
+        {
+            AddBlueSoul(pendingBonusSouls, null);
+            pendingBonusSouls = 0;
+            BattleUIManager.Instance.ShowMessage("Bonus Soul(s) activated!");
+        }
+
         RecoverTemporarilyCollapsedDrawers();
         coffinProtectionSuppressed = false;
         if (bossPhase == BossEncounterPhase.Phase3 && !egoRebornActivated)
@@ -211,7 +248,7 @@ public class BattleManager : MonoBehaviour
         currentHighlight = null;
         foreach (var ally in allies)
         {
-            if (!ally.isDead && ally.characterName.Contains("XIII"))
+            if (!ally.isDead && ally.CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.XIII)
             {
                 SetHighlight(ally);
                 break;
@@ -747,7 +784,7 @@ public class BattleManager : MonoBehaviour
         }
     }
 
-    private DemoSpecialCommand GetSpecialCommand(CharacterInteraction actor)
+    public DemoSpecialCommand GetSpecialCommand(CharacterInteraction actor)
     {
         if (actor == null)
         {
@@ -770,21 +807,9 @@ public class BattleManager : MonoBehaviour
         }
 
         // Compatibility only for old scenes that have not yet serialized stable IDs.
-        string normalizedName = actor.characterName.ToLowerInvariant();
-        if (normalizedName.Contains("an"))
-        {
-            return DemoSpecialCommand.SpiritPossession;
-        }
-
-        if (normalizedName.Contains("mac") || normalizedName.Contains("mặc"))
-        {
-            return DemoSpecialCommand.Omniscience;
-        }
-
-        if (normalizedName.Contains("xiii"))
-        {
-            return DemoSpecialCommand.EgoReborn;
-        }
+        if (actor.CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.An) return DemoSpecialCommand.SpiritPossession;
+        if (actor.CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.Mac) return DemoSpecialCommand.Omniscience;
+        if (actor.CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.XIII) return DemoSpecialCommand.EgoReborn;
 
         return DemoSpecialCommand.None;
     }
@@ -900,6 +925,12 @@ public class BattleManager : MonoBehaviour
             specialCooldowns[currentActor] = SpecialCommandRules.StartCooldown(command);
             BattleUIManager.Instance.RefreshSpecialButton(currentActor);
             BattleUIManager.Instance.ShowMessage("An kích hoạt NHẬP HỒN: kỹ năng kế tiếp được cường hóa.");
+            if (spiritPossessionVFXPrefab != null)
+            {
+                Instantiate(spiritPossessionVFXPrefab, currentActor.transform.position, UnityEngine.Quaternion.identity);
+            }
+            // Add Vignette/Noise hook here via UIManager if available
+            BattleUIManager.Instance.ShowMessage("[VFX Hook: Vignette, Noise, Audio, Charge]");
             return;
         }
 
@@ -926,6 +957,13 @@ public class BattleManager : MonoBehaviour
             RotateCameraTo(leftCamRot);
             SetHighlight(nearest);
             OnTargetSelected(nearest);
+            if (omniscienceReticlePrefab != null)
+            {
+                if (currentReticle != null) Destroy(currentReticle);
+                currentReticle = Instantiate(omniscienceReticlePrefab, nearest.transform.position, UnityEngine.Quaternion.identity);
+                currentReticle.transform.SetParent(nearest.transform);
+            }
+            BattleUIManager.Instance.ShowMessage("[UI Hook: Reticle Overlay Active]");
             return;
         }
 
@@ -1003,8 +1041,7 @@ public class BattleManager : MonoBehaviour
             return;
         }
 
-        if (string.IsNullOrEmpty(target.characterName) ||
-            !target.characterName.ToLowerInvariant().Contains("boss") ||
+        if (target == null || target.CombatantId != FrankenXIII.Combat.Domain.DemoCombatantId.BachMenhQuan ||
             !SpecialCommandRules.IsEgoRebornUnlocked(target.currentHP, target.maxHP))
         {
             return;
@@ -1591,13 +1628,41 @@ public class BattleManager : MonoBehaviour
             }
         }
 
+        // Boss Domain Rules Application
+        bool isBoss = target.CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.BachMenhQuan;
+        if (isBoss)
+        {
+            bool leftAlive = enemies.Exists(e => e.CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.LeftCorpseDrawer && !e.isDead);
+            bool rightAlive = enemies.Exists(e => e.CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.RightCorpseDrawer && !e.isDead);
+
+            damage = FrankenXIII.Combat.Domain.BossEncounterRules.ApplyCoffinProtection(damage, bossPhase, leftAlive, rightAlive, coffinProtectionSuppressed);
+            int newHp = FrankenXIII.Combat.Domain.BossEncounterRules.GetHpAfterDamage(target.currentHP, target.maxHP, damage, bossPhase, egoRebornActivated);
+            damage = target.currentHP - newHp;
+        }
+
         // Spawn Floating Text
         GameObject dmgTextObj = new GameObject("DamageText");
         dmgTextObj.transform.position = target.transform.position + new Vector3(0, 1.5f, -0.5f);
         DamageText dmgText = dmgTextObj.AddComponent<DamageText>();
         dmgText.Setup(damage, isCrit, false, Color.white); 
         
-        target.currentHP -= damage;
+        int actualDamage = target.TakeDamage(damage);
+        
+        if (isBoss)
+        {
+            var newPhase = FrankenXIII.Combat.Domain.BossEncounterRules.DeterminePhase(target.currentHP, target.maxHP);
+            if (newPhase != bossPhase && newPhase != FrankenXIII.Combat.Domain.BossEncounterPhase.None)
+            {
+                bossPhase = newPhase;
+                BattleUIManager.Instance.ShowMessage("Boss chuyển sang " + bossPhase.ToString() + "!");
+                var stats = FrankenXIII.Combat.Domain.BossEncounterRules.GetPhaseStats(bossPhase);
+                target.baseATK = stats.Attack;
+                target.baseDEF = stats.Defense;
+                target.maxLimit = stats.MaxLimit;
+                target.baseBreakATK = stats.BreakAttack;
+            }
+        }
+        
         TryUnlockEgoReborn(target);
 
         bool enteredDaze = false;
@@ -1820,6 +1885,24 @@ public class BattleManager : MonoBehaviour
             
             BattleUIManager.Instance.UpdateHP(target);
         }
+        else if (item.itemType == ItemType.RESTORE_SOUL)
+        {
+            pendingBonusSouls += item.soulRestoreAmount;
+            BattleUIManager.Instance.ShowMessage("Đã dùng Soul+1. Sẽ nhận +1 Soul vào lượt sau!");
+            GameObject dmgTextObj = new GameObject("BuffText");
+            dmgTextObj.transform.position = target.transform.position + new Vector3(0, 1.5f, -0.5f);
+            DamageText dmgText = dmgTextObj.AddComponent<DamageText>();
+            dmgText.Setup(1, false, false, Color.blue);
+        }
+        else if (item.itemType == ItemType.CURE_POISON)
+        {
+            target.isPoisoned = false;
+            BattleUIManager.Instance.ShowMessage(target.characterName + " đã được giải độc!");
+            GameObject dmgTextObj = new GameObject("BuffText");
+            dmgTextObj.transform.position = target.transform.position + new Vector3(0, 1.5f, -0.5f);
+            DamageText dmgText = dmgTextObj.AddComponent<DamageText>();
+            dmgText.Setup(0, false, false, Color.green);
+        }
         else if (item.itemType == ItemType.BUFF_STATS)
         {
             if (item.atkBuff > 0)
@@ -1866,7 +1949,7 @@ public class BattleManager : MonoBehaviour
 
         foreach (var enemy in aliveEnemies)
         {
-            bool isBoss = enemy.characterName.ToLower().Contains("boss");
+            bool isBoss = enemy.CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.BachMenhQuan;
             int beatCount = ActorBeatRules.GetEnemyBeatCount(isBoss);
             
             for (int b = 0; b < beatCount; b++)
@@ -2208,7 +2291,7 @@ public class BattleManager : MonoBehaviour
             if (slashVFXPrefab != null)
                 Instantiate(slashVFXPrefab, ally.transform.position + new Vector3(0, 1.5f, -1f), Quaternion.identity);
 
-            ally.currentHP -= dmg;
+            ally.TakeDamage(dmg);
             if (ally.currentHP <= 0)
             {
                 ally.currentHP = 0;

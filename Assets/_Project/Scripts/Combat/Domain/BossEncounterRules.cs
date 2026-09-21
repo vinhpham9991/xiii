@@ -105,9 +105,7 @@ namespace FrankenXIII.Combat.Domain
                 (leftDrawerProtecting || rightDrawerProtecting) &&
                 !protectionSuppressed;
 
-            return hasProtection
-                ? (int)Math.Floor(incomingDamage * (1f - Phase1DamageReduction))
-                : incomingDamage;
+            return hasProtection ? 0 : incomingDamage;
         }
 
         public static int GetHpAfterDamage(

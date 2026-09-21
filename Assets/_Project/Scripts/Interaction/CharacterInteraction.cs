@@ -18,6 +18,13 @@ public class CharacterInteraction : MonoBehaviour
     public bool isDazed = false;
     public bool isDead = false;
 
+    [Header("Boss Mechanics")]
+    public bool isProtected = false;
+    public int hpGateThreshold = 0;
+
+    [Header("Status Ailments")]
+    public bool isPoisoned = false;
+
     // Core Stats (Demo Funding standard)
     public int baseDEF = 0;
     public int currentShield = 0;
@@ -89,6 +96,13 @@ public class CharacterInteraction : MonoBehaviour
     void Start()
     {
         CreateSelectionArrow();
+        
+        // Apply debug config if exists
+        if (DebugConfigUI.Overrides != null && DebugConfigUI.Overrides.ContainsKey(characterName))
+        {
+            DebugConfigUI.Overrides[characterName].ApplyTo(this);
+        }
+
         if (!isPosInit)
         {
             originalPosition = transform.position;
@@ -100,35 +114,35 @@ public class CharacterInteraction : MonoBehaviour
         if (activeSkills == null || activeSkills.Count == 0)
         {
             activeSkills = new System.Collections.Generic.List<SkillData>();
-            if (characterName.Contains("XIII"))
+            if (CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.XIII || characterName.Contains("XIII"))
             {
-                activeSkills.Add(new SkillData("Tà Thi Trảm", SkillCategory.ATTACK, 1.4f, 2, 1));
-                activeSkills.Add(new SkillData("Huyết Đoạn Kích", SkillCategory.ATTACK, 1.8f, 1, 1));
-                SkillData bH = new SkillData("Liều Mạng Bộc Phá", SkillCategory.ATTACK, 2.5f, 4, 2);
+                activeSkills.Add(new SkillData("Tà Thi Trảm", SkillCategory.ATTACK, 1.4f, 2, 1) { description = "Tấn công vật lý cơ bản, phá bền tốt." });
+                activeSkills.Add(new SkillData("Huyết Đoạn Kích", SkillCategory.ATTACK, 1.8f, 1, 1) { description = "Sát thương cao, khả năng phá bền thấp." });
+                SkillData bH = new SkillData("Liều Mạng Bộc Phá", SkillCategory.ATTACK, 2.5f, 4, 2) { description = "Mất 150 HP để gây sát thương và phá bền cực lớn." };
                 bH.selfDamage = 150;
                 activeSkills.Add(bH);
             }
-            else if (characterName.Contains("Mac"))
+            else if (CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.Mac || characterName.Contains("Mac"))
             {
-                SkillData m1 = new SkillData("Điểm Huyệt Ba-Toong", SkillCategory.ATTACK, 1.1f, 2, 1);
+                SkillData m1 = new SkillData("Điểm Huyệt Ba-Toong", SkillCategory.ATTACK, 1.1f, 2, 1) { description = "Tăng 30% Tỉ lệ Bạo Kích." };
                 m1.extraCritRate = 0.30f;
                 activeSkills.Add(m1);
-                SkillData m2 = new SkillData("Bột Lân Tinh Bóc Giáp", SkillCategory.DEBUFF, 1.0f, 0, 1);
+                SkillData m2 = new SkillData("Bột Lân Tinh Bóc Giáp", SkillCategory.DEBUFF, 1.0f, 0, 1) { description = "Phá vỡ 50% Phòng Ngự của mục tiêu." };
                 m2.defShred = 0.50f;
                 activeSkills.Add(m2);
-                SkillData m3 = new SkillData("Ghi Chép Sát Cơ", SkillCategory.SUPPORT, 0f, 0, 1);
+                SkillData m3 = new SkillData("Ghi Chép Sát Cơ", SkillCategory.SUPPORT, 0f, 0, 1) { description = "Tăng 25% Sức Tấn Công cho đồng minh." };
                 m3.atkBuff = 0.25f;
                 activeSkills.Add(m3);
             }
-            else if (characterName.Contains("An"))
+            else if (CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.An || characterName.Contains("An"))
             {
-                SkillData a1 = new SkillData("Hộ Thân Phù", SkillCategory.SUPPORT, 0f, 0, 1);
+                SkillData a1 = new SkillData("Hộ Thân Phù", SkillCategory.SUPPORT, 0f, 0, 1) { description = "Tạo Khiên ảo hấp thụ 350 Sát Thương." };
                 a1.shieldAmount = 350;
                 activeSkills.Add(a1);
-                SkillData a2 = new SkillData("Dẫn Hồn Thuật", SkillCategory.SUPPORT, 0f, 0, 1);
+                SkillData a2 = new SkillData("Dẫn Hồn Thuật", SkillCategory.SUPPORT, 0f, 0, 1) { description = "Hồi 450 HP cho đồng minh." };
                 a2.healAmount = 450;
                 activeSkills.Add(a2);
-                SkillData a3 = new SkillData("Trấn Trạch Lôi Bùa", SkillCategory.ATTACK, 1.3f, 2, 1);
+                SkillData a3 = new SkillData("Trấn Trạch Lôi Bùa", SkillCategory.ATTACK, 1.3f, 2, 1) { description = "Sát thương Mental. Khắc hệ Tâm Linh." };
                 a3.isMental = true;
                 activeSkills.Add(a3);
             }
@@ -291,6 +305,22 @@ public class CharacterInteraction : MonoBehaviour
     private Transform miniLimitContainer;
 
     private Coroutine hpRoutine;
+
+    public int TakeDamage(int intendedDamage)
+    {
+        if (isProtected) return 0;
+        
+        int actualDamage = intendedDamage;
+        if (hpGateThreshold > 0 && currentHP - actualDamage < hpGateThreshold)
+        {
+            actualDamage = currentHP - hpGateThreshold;
+            if (actualDamage < 0) actualDamage = 0;
+        }
+        
+        currentHP -= actualDamage;
+        if (currentHP < 0) currentHP = 0;
+        return actualDamage;
+    }
 
     public void UpdateMiniHP()
     {
