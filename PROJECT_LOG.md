@@ -33,6 +33,11 @@ Dưới đây là nhật ký phát triển và tiến độ thực hiện của 
 - Xây dựng 14 Unit Test (EditMode) cho Special Command nhằm kiểm chứng các quy luật khắt khe: Cost = 0 Beat, Cooldown logic, chặn stack, nhận diện Weakpoint.
 - Đồng bộ lại state machine trong `BattleManager` để kích hoạt các trạng thái đặc biệt mà không làm gián đoạn Phase lập kế hoạch (Plan Phase).
 
+
+### 7. Cập nhật Quy tắc Chạm trán Boss (Boss Encounter Rules) & Đồng bộ Trạng thái
+- Triển khai logic Domain Tests (`BossEncounterRules.cs`) nhằm xác minh và siết chặt các luật lệ khi tương tác với Boss.
+- Kiểm tra chéo (Cross-check) toàn bộ hệ thống tài liệu: Cập nhật thành công `PROJECT_STATUS.md` để ghi nhận mã commit baseline mới nhất (`c85b9d1` -> `88845fa`), và chính thức xóa nhãn "uncommitted" của các tính năng Special Command.
+
 ---
 **Trạng thái hiện tại:** 
 Nguyên mẫu chiến đấu hiện đã ở mức build-được, hệ thống Input được kiểm soát trơn tru và hệ thống Core Domain Test (EditMode) bao phủ tới 32 cases chạy pass hoàn toàn. Chuẩn bị nghiệm thu toàn bộ PlayMode cho Instant Specials.
