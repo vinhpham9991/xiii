@@ -24,6 +24,16 @@ public class CharacterInteraction : MonoBehaviour
 
     [Header("Status Ailments")]
     public bool isPoisoned = false;
+    public int poisonDuration = 0;
+    
+    public bool isCursed = false;
+    public int curseDuration = 0;
+    
+    public bool isVulnerable = false;
+    public int vulnerabilityDuration = 0;
+    
+    public bool isBerserk = false;
+    public int berserkDuration = 0;
 
     // Core Stats (Demo Funding standard)
     public int baseDEF = 0;
@@ -668,5 +678,95 @@ public class CharacterInteraction : MonoBehaviour
         PlayAnimation("idle");
         UpdateMiniHP();
         UpdateMiniLimit();
+    }
+
+    public void ApplyStatus(string statusName, int duration)
+    {
+        if (isDead) return;
+
+        switch (statusName)
+        {
+            case "Poison":
+                isPoisoned = true;
+                poisonDuration = duration;
+                break;
+            case "Curse":
+                isCursed = true;
+                curseDuration = duration;
+                break;
+            case "Vulnerability":
+                isVulnerable = true;
+                vulnerabilityDuration = duration;
+                break;
+            case "Berserk":
+                isBerserk = true;
+                berserkDuration = duration;
+                break;
+        }
+        BattleUIManager.Instance.ShowMessage(characterName + " bị dính " + statusName + "!");
+    }
+
+    public void CureStatus(string statusName)
+    {
+        switch (statusName)
+        {
+            case "Poison":
+                isPoisoned = false;
+                poisonDuration = 0;
+                break;
+            case "Curse":
+                isCursed = false;
+                curseDuration = 0;
+                break;
+            case "Vulnerability":
+                isVulnerable = false;
+                vulnerabilityDuration = 0;
+                break;
+            case "Berserk":
+                isBerserk = false;
+                berserkDuration = 0;
+                break;
+        }
+    }
+
+    public void TickStatuses()
+    {
+        if (isDead) return;
+
+        if (isPoisoned)
+        {
+            int poisonDamage = Mathf.Max(1, maxHP / 20); // 5% max HP per round
+            TakeDamage(poisonDamage);
+            BattleUIManager.Instance.ShowMessage(characterName + " bị mất máu do Poison!");
+            UpdateMiniHP();
+            if (currentHP <= 0)
+            {
+                Die();
+                if (isAlly) BattleManager.Instance.allies.Remove(this);
+                else BattleManager.Instance.enemies.Remove(this);
+                return;
+            }
+
+            poisonDuration--;
+            if (poisonDuration <= 0) isPoisoned = false;
+        }
+
+        if (isCursed)
+        {
+            curseDuration--;
+            if (curseDuration <= 0) isCursed = false;
+        }
+
+        if (isVulnerable)
+        {
+            vulnerabilityDuration--;
+            if (vulnerabilityDuration <= 0) isVulnerable = false;
+        }
+
+        if (isBerserk)
+        {
+            berserkDuration--;
+            if (berserkDuration <= 0) isBerserk = false;
+        }
     }
 }

@@ -153,3 +153,16 @@ Nguyên mẫu chiến đấu hiện đã ở mức build-được, hệ thống 
   3. Cập nhật `BattleManager.cs`: Khi XIII kích hoạt Bản Ngã Tái Sinh (ở dưới 20% HP), hệ thống sẽ nạp đầy thanh Nội Lực và Ngoại Lực.
   4. Viết lại Unit Tests cho BossEncounterRules và SpecialCommandRules để pass toàn bộ.
 - **Trạng thái**: Hoàn tất.
+
+### 21. Nhật ký thao tác chi tiết
+- **Ngày giờ**: 2026-09-22 13:44:06
+- **Task được yêu cầu**: Cập nhật hệ thống Priority, Blue Soul Economy, Status Effects.
+- **Cách thức thực hiện**: 
+  1. Priority: Sort Action theo thứ tự Item > Support > Boss AOE > Single Attack > Special trong `ExecutePlanRoutine`.
+  2. Blue Soul Economy: 
+     + Break cấp 1 Blue Soul.
+     + Capped Crit (1 Blue / target).
+     + Capped Overkill (1 Blue / enemy).
+     + Thêm flag `generatesSoul` vào SkillData cho Delayed Soul Gen (round kế).
+  3. Status Effects: Code khung cho Poison (mất HP), Curse (cấm skill), Vulnerability (nhận thêm DMG), Berserk (chỉ Attack) trong `CharacterInteraction`.
+- **Trạng thái**: Hoàn tất.

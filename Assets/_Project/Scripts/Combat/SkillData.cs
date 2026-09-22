@@ -44,6 +44,7 @@ public class SkillData
     
     // For specific effects
     public bool isMental = false;
+    public bool generatesSoul = false;
 
     public SkillData(SkillId sid, string name, SkillCategory cat, float power, int brk, int cost = 1)
     {

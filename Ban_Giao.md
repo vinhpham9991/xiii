@@ -191,3 +191,9 @@ Chỉ sau khi các gate trên có bằng chứng pass mới được nâng phân
   - Sửa lại Priority System bị revert (ExecutePlanRoutine).
   - Blue Soul Economy (+1 Break, 1 cap Crit, 1 cap Overkill).
   - Status Effects (Poison, Curse, Vulnerability, Berserk).
+
+
+### Cập nhật bổ sung 22/09/2026 (Patch GDD 2.1.0 Part 2)
+- **Hoàn tất Priority System**: Đã code `GetActionPriority()` để Action chạy theo trình tự phân loại trước sau chuẩn xác (Item > Support > Attack > Special).
+- **Hoàn tất Blue Soul Economy**: Implement đầy đủ các rule cho Break (+1), Crit (cap 1), Overkill (cap 1), và Delayed Generation (PendingBonusSouls).
+- **Hoàn tất Status Effects**: Khởi tạo Poison, Curse, Vulnerability, Berserk trong `CharacterInteraction` và tích hợp các rule check vào logic trận đấu.

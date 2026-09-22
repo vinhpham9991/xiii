@@ -32,6 +32,10 @@ public class BattleManager : MonoBehaviour
     
     public int pendingBonusSouls = 0;
 
+    // Blue Soul Economy State
+    private HashSet<string> critRewardedPairs = new HashSet<string>();
+    private HashSet<CharacterInteraction> overkillRewardedEnemies = new HashSet<CharacterInteraction>();
+
     // Plans
     [SerializeField] private List<BeatPlan> playerPlan = new List<BeatPlan>();
     [SerializeField] private List<BeatPlan> enemyPlan = new List<BeatPlan>();
@@ -213,6 +217,15 @@ public class BattleManager : MonoBehaviour
             AddBlueSoul(pendingBonusSouls, null);
             pendingBonusSouls = 0;
             BattleUIManager.Instance.ShowMessage("Bonus Soul(s) activated!");
+        }
+
+        foreach (var ally in allies)
+        {
+            ally.TickStatuses();
+        }
+        foreach (var enemy in enemies)
+        {
+            enemy.TickStatuses();
         }
 
         RecoverTemporarilyCollapsedDrawers();
@@ -1188,6 +1201,18 @@ public class BattleManager : MonoBehaviour
 
     private bool AddActionToPlan(PlannedAction newAction)
     {
+        if (newAction.actor.isCursed && (newAction.type == ActionType.SKILL || newAction.type == ActionType.SPECIAL))
+        {
+            BattleUIManager.Instance.ShowMessage(newAction.actor.characterName + " đang bị Curse, không thể dùng Kỹ năng!");
+            return false;
+        }
+
+        if (newAction.actor.isBerserk && newAction.type != ActionType.ATTACK)
+        {
+            BattleUIManager.Instance.ShowMessage(newAction.actor.characterName + " đang bị Berserk, chỉ có thể đánh thường!");
+            return false;
+        }
+
         int actorActionCount = 0;
         foreach (BeatPlan beat in playerPlan)
         {
@@ -1290,6 +1315,11 @@ public class BattleManager : MonoBehaviour
 
     private IEnumerator ExecuteActionAsync(PlannedAction action, bool isFirst, bool isLast, CharacterInteraction prevTarget)
     {
+        if (action.type == ActionType.SKILL && action.skill != null && action.skill.generatesSoul)
+        {
+            pendingBonusSouls += 2;
+        }
+
         if (action.type == ActionType.SKILL && action.skill != null && action.skill.category == SkillCategory.SUPPORT)
         {
             yield return StartCoroutine(ExecuteSupport(action.actor, action.target, action.skill, isFirst, isLast, prevTarget));
@@ -1309,6 +1339,21 @@ public class BattleManager : MonoBehaviour
         action.isResolved = true;
     }
 
+    private int GetActionPriority(PlannedAction action)
+    {
+        if (action.type == ActionType.ITEM) return 10;
+        if (action.type == ActionType.SPECIAL) return 40;
+        
+        if (action.type == ActionType.SKILL && action.skill != null)
+        {
+            if (action.skill.category == SkillCategory.SUPPORT || action.skill.category == SkillCategory.DEBUFF) return 10;
+            if (!action.actor.isAlly && action.type == ActionType.SKILL) return 30; // Boss AOE
+            return 20; // Single Target Attack
+        }
+        
+        return 20; // Default ATTACK
+    }
+
     private IEnumerator ExecutePlanRoutine()
     {
         isExecuting = true;
@@ -1321,6 +1366,21 @@ public class BattleManager : MonoBehaviour
         for (int beatIndex = 0; beatIndex < playerPlan.Count; beatIndex++)
         {
             BeatPlan beat = playerPlan[beatIndex];
+
+            beat.actions.Sort((a, b) => 
+            {
+                int pA = GetActionPriority(a);
+                int pB = GetActionPriority(b);
+                if (pA != pB) return pA.CompareTo(pB);
+                
+                int charIndexA = allies.IndexOf(a.actor);
+                if (charIndexA == -1) charIndexA = 100 + enemies.IndexOf(a.actor);
+                
+                int charIndexB = allies.IndexOf(b.actor);
+                if (charIndexB == -1) charIndexB = 100 + enemies.IndexOf(b.actor);
+                
+                return charIndexA.CompareTo(charIndexB);
+            });
 
             foreach (PlannedAction action in beat.actions)
             {
@@ -1348,27 +1408,9 @@ public class BattleManager : MonoBehaviour
                     isFirst,
                     isLast,
                     previousTarget,
-                    Random.Range(0f, 0.2f)));
-            }
-
-            while (true)
-            {
-                bool allActionsResolved = true;
-                foreach (PlannedAction action in beat.actions)
-                {
-                    if (!action.isResolved && !action.isCancelled)
-                    {
-                        allActionsResolved = false;
-                        break;
-                    }
-                }
-
-                if (allActionsResolved)
-                {
-                    break;
-                }
-
-                yield return null;
+                    0f));
+                
+                yield return new WaitUntil(() => action.isResolved || action.isCancelled);
             }
 
             yield return new WaitForSeconds(0.5f);
@@ -1446,6 +1488,7 @@ public class BattleManager : MonoBehaviour
             CurrentShield = target.currentShield,
             HasWeakpoint = target.hasWeakpoint,
             IsDazed = target.isDazed,
+            IsVulnerable = target.isVulnerable,
             Element = target.element
         };
 
@@ -1677,10 +1720,31 @@ public class BattleManager : MonoBehaviour
             target.UpdateMiniLimit();
         }
 
+        bool applyCritReward = false;
+        if (isCrit)
+        {
+            string critKey = actor.GetInstanceID() + "_" + target.GetInstanceID();
+            if (!critRewardedPairs.Contains(critKey))
+            {
+                applyCritReward = true;
+                critRewardedPairs.Add(critKey);
+            }
+        }
+
+        bool applyOverkillReward = false;
+        if (target.currentHP <= 0 && !target.isAlly)
+        {
+            if (!overkillRewardedEnemies.Contains(target))
+            {
+                applyOverkillReward = true;
+                overkillRewardedEnemies.Add(target);
+            }
+        }
+
         int generatedSouls = CombatRewardRules.CalculateBlueSoulReward(
             enteredDaze,
-            isCrit,
-            hitWeakpoint);
+            applyCritReward,
+            applyOverkillReward);
 
         if (generatedSouls > 0)
         {

@@ -2,24 +2,22 @@ namespace FrankenXIII.Combat.Domain
 {
     public static class CombatRewardRules
     {
-        private const int DazeReward = 2;
-        private const int CriticalReward = 1;
-        private const int WeakpointReward = 1;
+        private const int DazeReward = 1;
 
         public static int CalculateBlueSoulReward(
             bool enteredDaze,
-            bool isCritical,
-            bool hitWeakpoint)
+            bool applyCritReward,
+            bool applyOverkillReward)
         {
             int reward = enteredDaze ? DazeReward : 0;
 
-            if (isCritical)
+            if (applyCritReward)
             {
-                reward += CriticalReward;
+                reward += 1;
             }
-            else if (hitWeakpoint)
+            if (applyOverkillReward)
             {
-                reward += WeakpointReward;
+                reward += 1;
             }
 
             return reward;

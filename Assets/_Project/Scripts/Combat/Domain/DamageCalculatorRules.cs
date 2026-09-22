@@ -15,6 +15,7 @@ namespace FrankenXIII.Combat.Domain
         public int CurrentShield;
         public bool HasWeakpoint;
         public bool IsDazed;
+        public bool IsVulnerable;
         public string Element;
     }
 
@@ -59,6 +60,7 @@ namespace FrankenXIII.Combat.Domain
             float weakMult = 1.0f;
             if (skill.IsSkill && skill.IsMental && defender.Element == "Mental") weakMult += 0.4f;
             if (defender.HasWeakpoint) weakMult += 0.4f;
+            if (defender.IsVulnerable) weakMult += 0.3f; // 30% extra direct damage
 
             // Táº¦NG 5: PHÃ‚N Ä á»ŠNH Báº O KÃ CH (CRIT)
             float critRateFinal = attacker.BaseCritRate + (skill.IsSkill ? skill.ExtraCritRate : 0f);
