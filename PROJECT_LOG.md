@@ -175,3 +175,18 @@ Nguyên mẫu chiến đấu hiện đã ở mức build-được, hệ thống 
   2. Beat System: Thêm `DemoEliteBeatCount = 2` vào `ActorBeatRules` và sửa hàm `GetEnemyBeatCount`.
   3. Stance System: Định nghĩa `StanceId` trong `SkillData`. Thêm `currentStance` (mặc định là SwordAndGun) vào `CharacterInteraction`. Tùy chỉnh việc nạp 3 bộ skill khác nhau cho XIII dựa trên Stance đang dùng.
 - **Trạng thái**: Hoàn tất.
+
+### 23. Nhật ký thao tác chi tiết (Fix Lỗi Heal Scaling)
+- **Ngày giờ**: 2026-09-22 17:02:35
+- **Task được yêu cầu**: Sửa đổi cơ chế Heal theo đúng chuẩn `EQUIPMENT & CONSUMABLES STANDARD v2.3.0`.
+- **Cách thức thực hiện**: 
+  1. Revert Item Heal về Fixed HP (`healAmount = 100`) để chống power-creep cho Item.
+  2. Áp dụng `% Max HP` (`healPercent`) cho Healing Skill (như Dẫn Hồn Thuật của An chuyển sang hồi 30% HP).
+  3. Cập nhật lại `BattleManager.cs` để phân biệt rõ logic xử lý máu hồi cho Item và Skill.
+- **Trạng thái**: Hoàn tất. Đã commit và push (ab782cf).
+
+### 24. Nhật ký thao tác chi tiết (Kiểm tra chéo README v2.3.0)
+- **Ngày giờ**: 2026-09-22 17:04:14
+- **Task được yêu cầu**: Rà soát bản cập nhật mới nhất của `README_STANDARD_PACK_v2.3.0.md`.
+- **Cách thức thực hiện**: Đã đọc và đối chiếu. Bản README mới (chốt hạ 26 notes, bao gồm việc Heal Scaling của Item là Fixed HP và Skill là % Max HP) hoàn toàn trùng khớp với Implementation của hệ thống hiện tại trong code. Không phát sinh conflict.
+- **Trạng thái**: Hoàn tất.
