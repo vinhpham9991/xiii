@@ -12,7 +12,7 @@ namespace FrankenXIII.Combat.Domain
 
     public static class SpecialCommandRules
     {
-        public const int StandardSoulCost = 1;
+        public const int StandardSoulCost = 0;
         public const int StandardCooldownRounds = 2;
         public const float EgoRebornBossHpThreshold = 0.20f;
         public const float SpiritPossessionOutputMultiplier = 2f;

@@ -1,10 +1,10 @@
 # FRANKEN XIII — Project Status & Source-of-Truth Registry
 
-**Status date:** 2026-09-21
+**Status date:** 2026-09-22
 
 **Repository:** `D:\Work\UNity\git\xiii\xiii`
 
-**Baseline revision:** `c85b9d1` (`main`); Instant Special Task 3 and UI updates are committed.
+**Baseline revision:** `c85b9d1` (`main`); Ego Reborn bug fixes, Boss HP Gate 60/40/20, and ID refactors implemented.
 
 **Unity version:** `6000.5.8f1`
 

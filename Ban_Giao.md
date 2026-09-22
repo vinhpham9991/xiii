@@ -181,3 +181,13 @@ Chỉ sau khi các gate trên có bằng chứng pass mới được nâng phân
 - Cập nhật `PROJECT_STATUS.md` trước; đồng bộ file này sau.
 
 *(Bản bàn giao cũ từng tuyên bố combat 100% và 24/24 tests đã được thay thế vì không được source hiện tại chứng minh.)*
+
+
+### Cập nhật 22/09/2026 (Patch GDD 2.1.0 Part 1)
+- **Hoàn tất Boss HP Gates**: Đã code chuẩn `BossEncounterRules.cs` khóa HP tại 60%, 40%, 20% theo đúng tài liệu GDD 2.1.0 mới nhất.
+- **Hoàn tất Cập nhật Bản Ngã Tái Sinh**: Fixed lỗi không nạp đầy Hồn Năng.
+- **Hoàn tất ID Refactoring**: Chuyển đổi `SkillData` và `ItemData` sang dùng Enum `SkillId` và `ItemId`.
+- **Cần làm tiếp**: 
+  - Sửa lại Priority System bị revert (ExecutePlanRoutine).
+  - Blue Soul Economy (+1 Break, 1 cap Crit, 1 cap Overkill).
+  - Status Effects (Poison, Curse, Vulnerability, Berserk).

@@ -143,3 +143,13 @@ Nguyên mẫu chiến đấu hiện đã ở mức build-được, hệ thống 
   2. Tạo các struct trung gian `CombatStats`, `SkillImpact` để truyền dữ liệu.
   3. Viết 6 test cases trong `DamageCalculatorRulesTests.cs` (EditMode) bao phủ logic trừ giáp, hệ, bạo kích, phá bền, và khiên.
 - **Trạng thái**: Hoàn tất.
+
+### 20. Nhật ký thao tác chi tiết
+- **Ngày giờ**: 2026-09-22 12:52:50
+- **Task được yêu cầu**: Cập nhật hệ thống ID (Enum), refactor HP Gate và Fix Ego Reborn theo GDD 2.1.0
+- **Cách thức thực hiện**: 
+  1. Thay thế string identifier bằng `SkillId` (enum) trong `SkillData` và `ItemId` (enum) trong `ItemData` để đồng bộ và tránh lỗi runtime.
+  2. Patch logic `BossEncounterRules.cs` để hỗ trợ cơ chế HP Gate ở 60%, 40% và 20% đúng như GDD.
+  3. Cập nhật `BattleManager.cs`: Khi XIII kích hoạt Bản Ngã Tái Sinh (ở dưới 20% HP), hệ thống sẽ nạp đầy thanh Nội Lực và Ngoại Lực.
+  4. Viết lại Unit Tests cho BossEncounterRules và SpecialCommandRules để pass toàn bộ.
+- **Trạng thái**: Hoàn tất.

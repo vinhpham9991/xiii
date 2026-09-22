@@ -1,5 +1,22 @@
 using UnityEngine;
 
+public enum SkillId
+{
+    None = 0,
+    XIII_Attack,
+    XIII_HeavySlash,
+    XIII_RapidFire,
+    An_Attack,
+    An_HoThanPhu,
+    An_DanHonThuat,
+    Mac_Attack,
+    Mac_SuyNhuoc,
+    Mac_NgienNat,
+    Boss_Attack,
+    Boss_Summon,
+    Boss_Aoe
+}
+
 public enum SkillCategory
 {
     ATTACK,
@@ -9,6 +26,7 @@ public enum SkillCategory
 
 public class SkillData
 {
+    public SkillId id;
     public string skillName;
     public string description;
     public SkillCategory category;
@@ -27,8 +45,9 @@ public class SkillData
     // For specific effects
     public bool isMental = false;
 
-    public SkillData(string name, SkillCategory cat, float power, int brk, int cost = 1)
+    public SkillData(SkillId sid, string name, SkillCategory cat, float power, int brk, int cost = 1)
     {
+        id = sid;
         skillName = name;
         category = cat;
         powerMultiplier = power;

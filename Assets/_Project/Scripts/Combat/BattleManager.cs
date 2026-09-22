@@ -980,8 +980,11 @@ public class BattleManager : MonoBehaviour
             }
 
             egoRebornActivated = true;
+            currentRedSoul = MAX_RED_SOUL;
+            currentBlueSoul = MAX_BLUE_SOUL;
+            BattleUIManager.Instance.UpdateSoulUI();
             BattleUIManager.Instance.RefreshSpecialButton(currentActor);
-            BattleUIManager.Instance.ShowMessage("XIII thức tỉnh BẢN NGÃ TÁI SINH!");
+            BattleUIManager.Instance.ShowMessage("XIII thức tỉnh BẢN NGÃ TÁI SINH! Nội Lực & Ngoại Lực đã nạp đầy.");
         }
     }
 
@@ -1048,11 +1051,8 @@ public class BattleManager : MonoBehaviour
         }
 
         egoRebornUnlocked = true;
-        currentRedSoul = MAX_RED_SOUL;
-        currentBlueSoul = MAX_BLUE_SOUL;
-        BattleUIManager.Instance.UpdateSoulUI();
         BattleUIManager.Instance.ShowMessage(
-            "BẢN NGÃ TÁI SINH đã mở khóa! Hồn Năng được nạp đầy.");
+            "BẢN NGÃ TÁI SINH đã mở khóa! Hãy dùng Tuyệt Kỹ để kích hoạt.");
     }
 
     public void OnActionSelected(ActionType action)

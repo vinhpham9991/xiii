@@ -1,5 +1,14 @@
 using UnityEngine;
 
+public enum ItemId
+{
+    None = 0,
+    HealthPotion,
+    PowerElixir,
+    SoulPlusOne,
+    Antidote
+}
+
 public enum ItemType
 {
     HEAL,
@@ -11,6 +20,7 @@ public enum ItemType
 [CreateAssetMenu(fileName = "NewItem", menuName = "Combat/ItemData")]
 public class ItemData : ScriptableObject
 {
+    public ItemId id;
     public string itemName;
     public string description;
     public ItemType itemType;

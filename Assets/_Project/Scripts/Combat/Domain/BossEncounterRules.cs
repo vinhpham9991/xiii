@@ -50,7 +50,8 @@ namespace FrankenXIII.Combat.Domain
         public const float Phase1DamageReduction = 0.30f;
         public const float DrawerRecoveryRatio = 0.50f;
         public const int Phase1FloorPercent = 60;
-        public const int Phase2FloorPercent = 20;
+        public const int Phase2FloorPercent = 40;
+        public const int Phase3FloorPercent = 20;
 
         public static BossEncounterPhase DeterminePhase(int currentHp, int maxHp)
         {
@@ -59,6 +60,11 @@ namespace FrankenXIII.Combat.Domain
             if (currentHp == 0)
             {
                 return BossEncounterPhase.Defeated;
+            }
+
+            if (currentHp * 100 <= maxHp * Phase3FloorPercent)
+            {
+                return BossEncounterPhase.Phase3; // Actually climax, but for stats we use phase3
             }
 
             if (currentHp * 100 <= maxHp * Phase2FloorPercent)
@@ -131,7 +137,7 @@ namespace FrankenXIII.Combat.Domain
                     floor = GetThresholdHp(maxHp, Phase2FloorPercent);
                     break;
                 case BossEncounterPhase.Phase3:
-                    floor = allowFinisherKill ? 0 : 1;
+                    floor = allowFinisherKill ? 0 : GetThresholdHp(maxHp, Phase3FloorPercent);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(phase));
