@@ -1592,17 +1592,30 @@ public class BattleManager : MonoBehaviour
         // Chờ Slash chém trúng (khoảng 0.1s - 0.2s)
         yield return new WaitForSeconds(0.15f);
 
+        int damage = 0;
+        int limitDamage = 0;
+        bool isCrit = false;
+        bool targetWasDazed = target.isDazed;
+        bool hitWeakpoint = target.hasWeakpoint;
+
+        bool isMiss = false;
+        if (actor.isBlind && UnityEngine.Random.value < 0.5f)
+        {
+            isMiss = true;
+            BattleUIManager.Instance.ShowMessage(actor.characterName + " đánh hụt do bị Mù!");
+            GameObject dmgTextObjMiss = new GameObject("MissText");
+            dmgTextObjMiss.transform.position = target.transform.position + new Vector3(0, 1.5f, -0.5f);
+            DamageText dmgTextMiss = dmgTextObjMiss.AddComponent<DamageText>();
+            dmgTextMiss.SetupString("Miss!", Color.gray);
+            goto SkipDamage;
+        }
+
         // Báo cho đối phương giật lùi và nháy sáng
         target.TakeHit(stepPos);
 
         // Soul cost đã được trừ tại AddActionToPlan khi người chơi xếp lệnh
         // Không trừ lại ở đây để tránh double deduction
 
-        int damage = 0;
-        int limitDamage = 0;
-        bool isCrit = false;
-        bool targetWasDazed = target.isDazed;
-        bool hitWeakpoint = target.hasWeakpoint;
         bool isSpiritPossessionEmpowered =
             actionType == ActionType.SKILL &&
             skill != null &&
@@ -1701,6 +1714,24 @@ public class BattleManager : MonoBehaviour
             }
         }
         
+        if (actionType == ActionType.SKILL && skill != null)
+        {
+            if (skill.inflictBlind && !isMiss)
+            {
+                target.isBlind = true;
+                target.blindDuration = 1; // Mù 1 turn
+                BattleUIManager.Instance.ShowMessage(target.characterName + " bị MÙ! Giảm 50% độ chính xác.");
+                
+                GameObject dmgTextObjBlind = new GameObject("BlindText");
+                dmgTextObjBlind.transform.position = target.transform.position + new Vector3(0, 1.5f, -0.5f);
+                DamageText dmgTextBlind = dmgTextObjBlind.AddComponent<DamageText>();
+                dmgTextBlind.SetupString("MÙ!", Color.blue);
+            }
+        }
+
+    SkipDamage:
+        if (isMiss) goto FinalizeAttack;
+        
         TryUnlockEgoReborn(target);
 
         bool enteredDaze = false;
@@ -1753,6 +1784,7 @@ public class BattleManager : MonoBehaviour
             AddBlueSoul(generatedSouls, actor);
         }
 
+    FinalizeAttack:
         if (target.currentHP <= 0) 
         {
             target.currentHP = 0;
@@ -1801,6 +1833,16 @@ public class BattleManager : MonoBehaviour
         {
             actorRb.linearVelocity = Vector3.zero;
             actorRb.angularVelocity = Vector3.zero;
+        }
+
+        if (isLast && actor.isBlind)
+        {
+            actor.blindDuration--;
+            if (actor.blindDuration <= 0)
+            {
+                actor.isBlind = false;
+                BattleUIManager.Instance.ShowMessage(actor.characterName + " đã hết hiệu ứng Mù.");
+            }
         }
 
         // Kiểm tra Win/Lose
@@ -2238,8 +2280,20 @@ public class BattleManager : MonoBehaviour
         // Chờ Slash chém trúng (khoảng 0.1s - 0.2s)
         yield return new WaitForSeconds(0.15f);
 
+        bool isMiss = false;
+        if (enemyActor.isBlind && UnityEngine.Random.value < 0.5f)
+        {
+            isMiss = true;
+            BattleUIManager.Instance.ShowMessage(enemyActor.characterName + " đánh hụt do bị Mù!");
+            GameObject dmgTextObjMiss = new GameObject("MissText");
+            dmgTextObjMiss.transform.position = target.transform.position + new Vector3(0, 1.5f, -0.5f);
+            DamageText dmgTextMiss = dmgTextObjMiss.AddComponent<DamageText>();
+            dmgTextMiss.SetupString("Miss!", Color.gray);
+            goto SkipDamageEnemy;
+        }
+
         // Trừ máu
-        int damage = Random.Range(30, 45);
+        int damage = UnityEngine.Random.Range(30, 45);
         bool isCrit = damage > 40;
 
         // Báo cho đối phương giật lùi và nháy sáng
@@ -2257,6 +2311,8 @@ public class BattleManager : MonoBehaviour
         dmgText.Setup(damage, damage > 40, false, Color.red);
         
         target.currentHP -= damage;
+
+    SkipDamageEnemy:
         if (target.currentHP <= 0) 
         {
             target.currentHP = 0;
@@ -2300,6 +2356,16 @@ public class BattleManager : MonoBehaviour
         {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
+        }
+
+        if (isLast && enemyActor.isBlind)
+        {
+            enemyActor.blindDuration--;
+            if (enemyActor.blindDuration <= 0)
+            {
+                enemyActor.isBlind = false;
+                BattleUIManager.Instance.ShowMessage(enemyActor.characterName + " đã hết hiệu ứng Mù.");
+            }
         }
     }
 

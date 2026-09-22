@@ -34,6 +34,9 @@ public class CharacterInteraction : MonoBehaviour
     
     public bool isBerserk = false;
     public int berserkDuration = 0;
+    
+    public bool isBlind = false;
+    public int blindDuration = 0;
 
     // Core Stats (Demo Funding standard)
     public int baseDEF = 0;
@@ -146,25 +149,23 @@ public class CharacterInteraction : MonoBehaviour
             }
             else if (CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.Mac || characterName.Contains("Mac"))
             {
-                SkillData m1 = new SkillData(SkillId.Mac_Attack, "Điểm Huyệt Ba-Toong", SkillCategory.ATTACK, 1.1f, 2, 1) { description = "Tăng 30% Tỉ lệ Bạo Kích." };
-                m1.extraCritRate = 0.30f;
+                SkillData m1 = new SkillData(SkillId.Mac_Attack, "Quét Gậy", SkillCategory.ATTACK, 1.0f, 1, 1) { description = "Sát thương vật lý và trừ nhẹ Limit." };
                 activeSkills.Add(m1);
-                SkillData m2 = new SkillData(SkillId.Mac_SuyNhuoc, "Bột Lân Tinh Bóc Giáp", SkillCategory.DEBUFF, 1.0f, 0, 1) { description = "Phá vỡ 50% Phòng Ngự của mục tiêu." };
-                m2.defShred = 0.50f;
+                SkillData m2 = new SkillData(SkillId.Mac_Blind, "Ném Bột Hóa Chất", SkillCategory.DEBUFF, 0f, 0, 2) { description = "Gây mù mục tiêu, giảm 50% độ chính xác." };
+                m2.inflictBlind = true;
                 activeSkills.Add(m2);
-                SkillData m3 = new SkillData(SkillId.None, "Ghi Chép Sát Cơ", SkillCategory.SUPPORT, 0f, 0, 1) { description = "Tăng 25% Sức Tấn Công cho đồng minh." };
-                m3.atkBuff = 0.25f;
+                SkillData m3 = new SkillData(SkillId.Mac_DirectDamage, "Phóng Dao Hóa Chất", SkillCategory.ATTACK, 1.8f, 1, 2) { description = "Sát thương trực tiếp mạnh mẽ hệ Mixed." };
                 activeSkills.Add(m3);
             }
             else if (CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.An || characterName.Contains("An"))
             {
-                SkillData a1 = new SkillData(SkillId.An_HoThanPhu, "Hộ Thân Phù", SkillCategory.SUPPORT, 0f, 0, 1) { description = "Tạo Khiên ảo hấp thụ 350 Sát Thương." };
+                SkillData a1 = new SkillData(SkillId.An_HoThanPhu, "Hộ Thân Phù", SkillCategory.SUPPORT, 0f, 0, 2) { description = "Tạo Khiên ảo hấp thụ 350 Sát Thương." };
                 a1.shieldAmount = 350;
                 activeSkills.Add(a1);
-                SkillData a2 = new SkillData(SkillId.An_DanHonThuat, "Dẫn Hồn Thuật", SkillCategory.SUPPORT, 0f, 0, 1) { description = "Hồi 30% HP cho đồng minh." };
+                SkillData a2 = new SkillData(SkillId.An_DanHonThuat, "Dẫn Hồn Thuật", SkillCategory.SUPPORT, 0f, 0, 2) { description = "Hồi 30% HP cho đồng minh." };
                 a2.healPercent = 0.3f;
                 activeSkills.Add(a2);
-                SkillData a3 = new SkillData(SkillId.An_Attack, "Trấn Trạch Lôi Bùa", SkillCategory.ATTACK, 1.3f, 2, 1) { description = "Sát thương Mental. Khắc hệ Tâm Linh." };
+                SkillData a3 = new SkillData(SkillId.An_Attack, "Trấn Trạch Lôi Bùa", SkillCategory.ATTACK, 1.3f, 2, 2) { description = "Sát thương Mental. Khắc hệ Tâm Linh." };
                 a3.isMental = true;
                 activeSkills.Add(a3);
             }

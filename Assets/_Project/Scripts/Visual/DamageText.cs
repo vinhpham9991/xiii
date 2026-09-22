@@ -11,6 +11,11 @@ public class DamageText : MonoBehaviour
 
     public void Setup(int damageAmount, bool isCritical, bool isHeal, Color color)
     {
+        SetupString(damageAmount.ToString() + (isCritical ? "!" : ""), color);
+    }
+    
+    public void SetupString(string text, Color color)
+    {
         textMesh = gameObject.AddComponent<TextMesh>();
         
         // Sử dụng font có sẵn trong máy để không lỗi font
@@ -22,8 +27,7 @@ public class DamageText : MonoBehaviour
             renderer.sharedMaterial = font.material;
         }
 
-        textMesh.text = damageAmount.ToString();
-        if (isCritical) textMesh.text += "!";
+        textMesh.text = text;
         
         textMesh.characterSize = 0.05f; // Thu nhỏ 50% nữa
         textMesh.fontSize = 60;

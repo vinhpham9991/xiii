@@ -199,3 +199,12 @@ Nguyên mẫu chiến đấu hiện đã ở mức build-được, hệ thống 
   2. Đổi `a2.healAmount` thành `a2.healPercent` trong `BattleSceneGenerator.cs` để đồng bộ với v2.3.0.
   3. Cập nhật dòng code gọi `actor.GetInstanceID()` thành `actor.GetHashCode()` trong `BattleManager.cs` để sửa lỗi API bị Obsolete.
 - **Trạng thái**: Hoàn tất, đã hết lỗi. Code compile bình thường.
+
+### 26. Nhật ký thao tác chi tiết (Cập nhật Kỹ năng Mặc & An, thêm cơ chế Mù)
+- **Ngày giờ**: 2026-09-23 00:08:55
+- **Task được yêu cầu**: Thiết kế và cập nhật lại kỹ năng cho Mặc và An theo chuẩn Funding Demo v2.3.0, đồng thời fix các lỗi unassigned variables phát sinh.
+- **Cách thức thực hiện**: 
+  1. Cập nhật `SkillData.cs`: Thêm `Mac_Blind`, `Mac_DirectDamage` vào `SkillId`, bổ sung cờ `inflictBlind`.
+  2. Cập nhật `CharacterInteraction.cs` & `BattleSceneGenerator.cs`: Thay mới kỹ năng cho Mặc (Quét Gậy, Ném Bột Hóa Chất, Phóng Dao Hóa Chất), và chuẩn hóa Soul Cost = 2 cho các kỹ năng Support của An (Hộ Thân Phù, Dẫn Hồn Thuật).
+  3. Cập nhật `BattleManager.cs`: Thêm cơ chế Mù (Blind). Nếu mục tiêu bị ném bột, tỉ lệ đánh hụt ở lượt tiếp theo là 50%. Xử lý dọn dẹp các biến local để khắc phục lỗi biên dịch `CS0165`.
+- **Trạng thái**: Hoàn tất, đã commit lên Git.

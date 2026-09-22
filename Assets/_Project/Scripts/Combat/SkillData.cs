@@ -10,8 +10,8 @@ public enum SkillId
     An_HoThanPhu,
     An_DanHonThuat,
     Mac_Attack,
-    Mac_SuyNhuoc,
-    Mac_NgienNat,
+    Mac_Blind,
+    Mac_DirectDamage,
     Boss_Attack,
     Boss_Summon,
     Boss_Aoe
@@ -49,6 +49,7 @@ public class SkillData
     public float defShred;
     public float atkBuff;
     public int selfDamage;
+    public bool inflictBlind;
     
     // For specific effects
     public bool isMental = false;

@@ -293,16 +293,14 @@ public class BattleSceneGenerator
             interaction.maxHP = 1650; interaction.baseDEF = 10; interaction.baseATK = 28; interaction.baseBreakATK = 1;
             interaction.baseCritRate = 0.25f; interaction.baseCritDMG = 1.6f; interaction.element = "Mixed";
 
-            SkillData m1 = new SkillData(SkillId.Mac_Attack, "Điểm Huyệt Ba-Toong", SkillCategory.ATTACK, 1.1f, 2, 1);
-            m1.extraCritRate = 0.30f;
+            SkillData m1 = new SkillData(SkillId.Mac_Attack, "Quét Gậy", SkillCategory.ATTACK, 1.0f, 1, 1);
             interaction.activeSkills.Add(m1);
             
-            SkillData m2 = new SkillData(SkillId.Mac_SuyNhuoc, "Bột Lân Tinh Bóc Giáp", SkillCategory.DEBUFF, 1.0f, 0, 1);
-            m2.defShred = 0.50f;
+            SkillData m2 = new SkillData(SkillId.Mac_Blind, "Ném Bột Hóa Chất", SkillCategory.DEBUFF, 0f, 0, 2);
+            m2.inflictBlind = true;
             interaction.activeSkills.Add(m2);
             
-            SkillData m3 = new SkillData(SkillId.None, "Ghi Chép Sát Cơ", SkillCategory.SUPPORT, 0f, 0, 1);
-            m3.atkBuff = 0.25f;
+            SkillData m3 = new SkillData(SkillId.Mac_DirectDamage, "Phóng Dao Hóa Chất", SkillCategory.ATTACK, 1.8f, 1, 2);
             interaction.activeSkills.Add(m3);
         }
         else if (combatantId == DemoCombatantId.An)
@@ -310,15 +308,15 @@ public class BattleSceneGenerator
             interaction.maxHP = 1200; interaction.baseDEF = 6; interaction.baseATK = 22; interaction.baseBreakATK = 1;
             interaction.baseCritRate = 0.05f; interaction.baseCritDMG = 1.5f; interaction.element = "Mental";
 
-            SkillData a1 = new SkillData(SkillId.An_HoThanPhu, "Hộ Thân Phù", SkillCategory.SUPPORT, 0f, 0, 1);
+            SkillData a1 = new SkillData(SkillId.An_HoThanPhu, "Hộ Thân Phù", SkillCategory.SUPPORT, 0f, 0, 2);
             a1.shieldAmount = 350;
             interaction.activeSkills.Add(a1);
             
-            SkillData a2 = new SkillData(SkillId.An_DanHonThuat, "Dẫn Hồn Thuật", SkillCategory.SUPPORT, 0f, 0, 1);
+            SkillData a2 = new SkillData(SkillId.An_DanHonThuat, "Dẫn Hồn Thuật", SkillCategory.SUPPORT, 0f, 0, 2);
             a2.healPercent = 0.3f;
             interaction.activeSkills.Add(a2);
             
-            SkillData a3 = new SkillData(SkillId.An_Attack, "Trấn Trạch Lôi Bùa", SkillCategory.ATTACK, 1.3f, 2, 1);
+            SkillData a3 = new SkillData(SkillId.An_Attack, "Trấn Trạch Lôi Bùa", SkillCategory.ATTACK, 1.3f, 2, 2);
             a3.isMental = true;
             interaction.activeSkills.Add(a3);
         }
