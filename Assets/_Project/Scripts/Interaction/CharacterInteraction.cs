@@ -161,8 +161,8 @@ public class CharacterInteraction : MonoBehaviour
                 SkillData a1 = new SkillData("Hộ Thân Phù", SkillCategory.SUPPORT, 0f, 0, 1) { description = "Tạo Khiên ảo hấp thụ 350 Sát Thương." };
                 a1.shieldAmount = 350;
                 activeSkills.Add(a1);
-                SkillData a2 = new SkillData("Dẫn Hồn Thuật", SkillCategory.SUPPORT, 0f, 0, 1) { description = "Hồi 450 HP cho đồng minh." };
-                a2.healAmount = 450;
+                SkillData a2 = new SkillData("Dẫn Hồn Thuật", SkillCategory.SUPPORT, 0f, 0, 1) { description = "Hồi 30% HP cho đồng minh." };
+                a2.healPercent = 0.3f;
                 activeSkills.Add(a2);
                 SkillData a3 = new SkillData("Trấn Trạch Lôi Bùa", SkillCategory.ATTACK, 1.3f, 2, 1) { description = "Sát thương Mental. Khắc hệ Tâm Linh." };
                 a3.isMental = true;

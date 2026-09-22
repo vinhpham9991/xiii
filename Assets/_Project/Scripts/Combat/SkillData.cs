@@ -45,7 +45,7 @@ public class SkillData
     
     // Support/Debuff fields
     public int shieldAmount;
-    public int healAmount;
+    public float healPercent; // Hồi máu theo % Max HP
     public float defShred;
     public float atkBuff;
     public int selfDamage;

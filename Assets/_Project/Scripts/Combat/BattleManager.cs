@@ -158,7 +158,7 @@ public class BattleManager : MonoBehaviour
         potion.itemName = "Health Potion";
         potion.itemName = "Hồi Hoàn Đan";
         potion.itemType = ItemType.HEAL;
-        potion.healPercent = 0.3f; // 30% Max HP
+        potion.healAmount = 100;
         potion.description = "Hồi 100 HP";
         inventory.Add(potion, 9);
 
@@ -1863,11 +1863,12 @@ public class BattleManager : MonoBehaviour
                 target.currentShield += shieldAmount;
                 BattleUIManager.Instance.ShowMessage(target.characterName + " nhận được " + shieldAmount + " Hộ Giáp!");
             }
-            if (skill.healAmount > 0)
+            if (skill.healPercent > 0)
             {
+                int baseHeal = Mathf.FloorToInt(target.maxHP * skill.healPercent);
                 int healAmount = isSpiritPossessionEmpowered
-                    ? SpecialCommandRules.GetSpiritPossessionHealing(skill.healAmount)
-                    : skill.healAmount;
+                    ? SpecialCommandRules.GetSpiritPossessionHealing(baseHeal)
+                    : baseHeal;
                 target.currentHP = Mathf.Min(target.maxHP, target.currentHP + healAmount);
                 BattleUIManager.Instance.ShowMessage(target.characterName + " hồi " + healAmount + " Sinh lực!");
                 
@@ -1936,13 +1937,12 @@ public class BattleManager : MonoBehaviour
         
         if (item.itemType == ItemType.HEAL)
         {
-            int healAmount = Mathf.FloorToInt(target.maxHP * item.healPercent);
-            target.currentHP = Mathf.Min(target.maxHP, target.currentHP + healAmount);
+            target.currentHP = Mathf.Min(target.maxHP, target.currentHP + item.healAmount);
             
             GameObject dmgTextObj = new GameObject("HealText");
             dmgTextObj.transform.position = target.transform.position + new Vector3(0, 1.5f, -0.5f);
             DamageText dmgText = dmgTextObj.AddComponent<DamageText>();
-            dmgText.Setup(healAmount, false, false, Color.green); 
+            dmgText.Setup(item.healAmount, false, false, Color.green); 
             
             BattleUIManager.Instance.UpdateHP(target);
         }
