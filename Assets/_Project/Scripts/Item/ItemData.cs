@@ -26,7 +26,8 @@ public class ItemData : ScriptableObject
     public ItemType itemType;
     
     [Header("Heal Effect")]
-    public int healAmount;
+    [Tooltip("Phần trăm máu tối đa được hồi (ví dụ: 0.3 = 30%)")]
+    public float healPercent;
     
     [Header("Buff Effect")]
     public float atkBuff; // Ví dụ: 0.2 cho 20%

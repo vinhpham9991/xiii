@@ -7,11 +7,14 @@ namespace FrankenXIII.Combat.Domain
     {
         public const int DemoPlayerBeatCount = 2;
         public const int DemoEnemyBeatCount = 1;
+        public const int DemoEliteBeatCount = 2;
         public const int DemoBossBeatCount = 3;
 
-        public static int GetEnemyBeatCount(bool isBoss)
+        public static int GetEnemyBeatCount(bool isBoss, bool isElite = false)
         {
-            return isBoss ? DemoBossBeatCount : DemoEnemyBeatCount;
+            if (isBoss) return DemoBossBeatCount;
+            if (isElite) return DemoEliteBeatCount;
+            return DemoEnemyBeatCount;
         }
 
         public static bool CanScheduleAction(int scheduledActionCount, int beatCount)

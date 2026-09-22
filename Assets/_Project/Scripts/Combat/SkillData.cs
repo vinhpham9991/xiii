@@ -17,6 +17,14 @@ public enum SkillId
     Boss_Aoe
 }
 
+public enum StanceId
+{
+    None = 0,
+    SwordAndGun,
+    TwoHandedSword,
+    DualGuns
+}
+
 public enum SkillCategory
 {
     ATTACK,

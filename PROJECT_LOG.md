@@ -166,3 +166,12 @@ Nguyên mẫu chiến đấu hiện đã ở mức build-được, hệ thống 
      + Thêm flag `generatesSoul` vào SkillData cho Delayed Soul Gen (round kế).
   3. Status Effects: Code khung cho Poison (mất HP), Curse (cấm skill), Vulnerability (nhận thêm DMG), Berserk (chỉ Attack) trong `CharacterInteraction`.
 - **Trạng thái**: Hoàn tất.
+
+### 22. Nhật ký thao tác chi tiết (Patch GDD v2.3.0)
+- **Ngày giờ**: 2026-09-22 16:57:38
+- **Task được yêu cầu**: Cập nhật hệ thống Item, Beat và Stance theo GDD v2.3.0.
+- **Cách thức thực hiện**: 
+  1. Item & Recovery: Đổi `healAmount` thành `healPercent` trong `ItemData`, cập nhật `BattleManager` để hồi máu theo % Max HP. Thêm cơ chế đếm `emptyBottles` cơ bản. Cập nhật Red Soul = số lượng đồng minh còn sống (Active Standing).
+  2. Beat System: Thêm `DemoEliteBeatCount = 2` vào `ActorBeatRules` và sửa hàm `GetEnemyBeatCount`.
+  3. Stance System: Định nghĩa `StanceId` trong `SkillData`. Thêm `currentStance` (mặc định là SwordAndGun) vào `CharacterInteraction`. Tùy chỉnh việc nạp 3 bộ skill khác nhau cho XIII dựa trên Stance đang dùng.
+- **Trạng thái**: Hoàn tất.

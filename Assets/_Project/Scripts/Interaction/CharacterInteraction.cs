@@ -55,6 +55,7 @@ public class CharacterInteraction : MonoBehaviour
     private GameObject selectionCircle;
 
     public DemoCombatantId CombatantId => demoCombatantId;
+    public StanceId currentStance = StanceId.SwordAndGun;
 
     public Vector3 originalPosition;
     public bool isPosInit = false;
@@ -126,11 +127,22 @@ public class CharacterInteraction : MonoBehaviour
             activeSkills = new System.Collections.Generic.List<SkillData>();
             if (CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.XIII || characterName.Contains("XIII"))
             {
-                activeSkills.Add(new SkillData("Tà Thi Trảm", SkillCategory.ATTACK, 1.4f, 2, 1) { description = "Tấn công vật lý cơ bản, phá bền tốt." });
-                activeSkills.Add(new SkillData("Huyết Đoạn Kích", SkillCategory.ATTACK, 1.8f, 1, 1) { description = "Sát thương cao, khả năng phá bền thấp." });
-                SkillData bH = new SkillData("Liều Mạng Bộc Phá", SkillCategory.ATTACK, 2.5f, 4, 2) { description = "Mất 150 HP để gây sát thương và phá bền cực lớn." };
-                bH.selfDamage = 150;
-                activeSkills.Add(bH);
+                if (currentStance == StanceId.SwordAndGun)
+                {
+                    activeSkills.Add(new SkillData("Tà Thi Trảm", SkillCategory.ATTACK, 1.4f, 2, 1) { description = "Tấn công vật lý cơ bản, phá bền tốt." });
+                    activeSkills.Add(new SkillData("Huyết Đoạn Kích", SkillCategory.ATTACK, 1.8f, 1, 1) { description = "Sát thương cao, khả năng phá bền thấp." });
+                    SkillData bH = new SkillData("Liều Mạng Bộc Phá", SkillCategory.ATTACK, 2.5f, 4, 2) { description = "Mất 150 HP để gây sát thương và phá bền cực lớn." };
+                    bH.selfDamage = 150;
+                    activeSkills.Add(bH);
+                }
+                else if (currentStance == StanceId.TwoHandedSword)
+                {
+                    activeSkills.Add(new SkillData("Trảm Phong", SkillCategory.ATTACK, 2.0f, 3, 2) { description = "Sát thương cao, tốn 2 Soul." });
+                }
+                else if (currentStance == StanceId.DualGuns)
+                {
+                    activeSkills.Add(new SkillData("Bão Đạn", SkillCategory.ATTACK, 1.2f, 1, 1) { description = "Tấn công nhanh, dễ bạo kích." });
+                }
             }
             else if (CombatantId == FrankenXIII.Combat.Domain.DemoCombatantId.Mac || characterName.Contains("Mac"))
             {
