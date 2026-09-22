@@ -1725,7 +1725,7 @@ public class BattleManager : MonoBehaviour
         bool applyCritReward = false;
         if (isCrit)
         {
-            string critKey = actor.GetInstanceID() + "_" + target.GetInstanceID();
+            string critKey = actor.GetHashCode() + "_" + target.GetHashCode();
             if (!critRewardedPairs.Contains(critKey))
             {
                 applyCritReward = true;

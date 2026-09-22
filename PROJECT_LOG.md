@@ -190,3 +190,12 @@ Nguyên mẫu chiến đấu hiện đã ở mức build-được, hệ thống 
 - **Task được yêu cầu**: Rà soát bản cập nhật mới nhất của `README_STANDARD_PACK_v2.3.0.md`.
 - **Cách thức thực hiện**: Đã đọc và đối chiếu. Bản README mới (chốt hạ 26 notes, bao gồm việc Heal Scaling của Item là Fixed HP và Skill là % Max HP) hoàn toàn trùng khớp với Implementation của hệ thống hiện tại trong code. Không phát sinh conflict.
 - **Trạng thái**: Hoàn tất.
+
+### 25. Nhật ký thao tác chi tiết (Fix Compilation Errors sau khi update SkillData)
+- **Ngày giờ**: 2026-09-22 23:17:08
+- **Task được yêu cầu**: Sửa các lỗi build phát sinh liên quan tới `SkillData` constructor, `healAmount`, và API bị obsolete (`Object.GetInstanceID()`).
+- **Cách thức thực hiện**: 
+  1. Thay thế tham số chuỗi bằng `SkillId` tương ứng cho toàn bộ hàm khởi tạo `SkillData` trong `CharacterInteraction.cs` và `BattleSceneGenerator.cs`.
+  2. Đổi `a2.healAmount` thành `a2.healPercent` trong `BattleSceneGenerator.cs` để đồng bộ với v2.3.0.
+  3. Cập nhật dòng code gọi `actor.GetInstanceID()` thành `actor.GetHashCode()` trong `BattleManager.cs` để sửa lỗi API bị Obsolete.
+- **Trạng thái**: Hoàn tất, đã hết lỗi. Code compile bình thường.
